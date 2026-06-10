@@ -585,6 +585,7 @@
       <h1>SOSFam</h1>
       <p>Your family, always connected</p>
       <span class="emergency-badge">EMERGENCY CHAT</span>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:6px;letter-spacing:1px;">v1.0.0-beta</div>
     </div>
 
     <div id="pinStep">
@@ -1281,14 +1282,17 @@ function appendSingleMessage(msg) {
 // ── REALTIME ──
 function subscribeRealtime() {
   realtimeSub = sb
-    .channel('fam_messages_' + currentRoom.id)
+    .channel('fam_messages_' + currentFamilyId + '_' + currentRoom.id)
     .on('postgres_changes', {
       event: 'INSERT',
       schema: 'public',
       table: 'fam_messages',
       filter: `room_id=eq.${currentRoom.id}`
     }, payload => {
-      appendSingleMessage(payload.new);
+      // Extra client-side family isolation check
+      if (payload.new.family_id === currentFamilyId) {
+        appendSingleMessage(payload.new);
+      }
     })
     .subscribe();
 }
@@ -1298,6 +1302,7 @@ async function sendMessage() {
   const input = document.getElementById('msgInput');
   const text = input.value.trim();
   if (!text || !currentRoom) return;
+  if (text.length > 500) { showToast('Message too long (max 500 chars)'); return; }
 
   input.value = '';
   autoResize(input);
@@ -1524,6 +1529,14 @@ async function sendSOS() {
     btn.disabled = false;
     btn.textContent = '🆘 SOS';
   }, 10000);
+}
+
+async function toggleAdmin(id, currentStatus) {
+  const { error } = await sb.from('fam_members').update({ is_admin: !currentStatus }).eq('id', id);
+  if (error) { showToast('Error updating admin status'); return; }
+  await loadMembers();
+  renderAdminPanel();
+  showToast('Admin status updated ✓');
 }
 
 async function updatePin(id, pin) {
