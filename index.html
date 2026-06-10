@@ -963,6 +963,15 @@ async function doRegister() {
   const famDigits = document.getElementById('regFamDigits').value.trim();
   let famId = famName + famDigits;
   
+  // Check if Family ID already taken
+  const { data: existing } = await sb.from('fam_families').select('family_id').eq('family_id', famId).single();
+  if (existing) {
+    document.getElementById('regError').textContent = `${famId} is already taken. Choose different digits.`;
+    btn.disabled = false;
+    btn.textContent = 'Create Family';
+    return;
+  }
+
   // Insert family
   const { error: famErr } = await sb.from('fam_families').insert([{ family_id: famId, family_name: familyName }]);
   if (famErr) {
