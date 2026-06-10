@@ -739,7 +739,13 @@ const SUPABASE_URL = 'https://mjnigheggxtythytsqle.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qbmlnaGVnZ3h0eXRoeXRzcWxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzYwMDcsImV4cCI6MjA5NTY1MjAwN30.mh1psePuKeQ8SH5uita7BsUKd6wd5IwHVVlDmJCMA0Q';
 // Admin status comes from fam_members.is_admin (Supabase)
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  global: {
+    headers: {
+      'x-app-token': 'afc5da2bce3e7e74797ed1bd8c513265bbdd12de5d09469019bda4927dd1e71d'
+    }
+  }
+});
 
 async function hashPin(pin) {
   const msgBuffer = new TextEncoder().encode(pin);
