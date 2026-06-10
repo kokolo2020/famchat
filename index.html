@@ -589,7 +589,7 @@
 
     <div id="pinStep">
       <div class="field-label">Family ID</div>
-      <input type="text" id="familyIdInput" class="input" placeholder="e.g. SOSFAM-A3K9" autocomplete="off" style="text-transform:uppercase;letter-spacing:1px;" oninput="checkLoginReady()">
+      <input type="text" id="familyIdInput" class="input" placeholder="e.g. SF-A3K9-B7MX-Q2NP" autocomplete="off" style="text-transform:uppercase;letter-spacing:1px;" oninput="checkLoginReady()">
       <div class="field-label" style="margin-top:12px;">Your PIN</div>
       <input type="password" id="codeInput" class="input" placeholder="••••••" autocomplete="off" maxlength="6" inputmode="numeric" oninput="checkLoginReady()">
       <button class="btn-primary" id="loginBtn" disabled onclick="doLogin()">Enter Chat</button>
@@ -733,6 +733,13 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 // Admin status comes from fam_members.is_admin (Supabase)
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function hashPin(pin) {
+  const msgBuffer = new TextEncoder().encode(pin);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 let currentUser = null;
 let currentRoom = null;
@@ -917,9 +924,13 @@ function showLogin() {
 
 function generateFamilyId() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let id = 'SOSFAM-';
+  let id = 'SF-';
   for (let i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
-  return id;
+  id += '-';
+  for (let i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  id += '-';
+  for (let i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return id; // e.g. SF-A3K9-B7MX-Q2NP
 }
 
 async function doRegister() {
@@ -944,7 +955,8 @@ async function doRegister() {
   }
   
   // Insert admin member
-  await sb.from('fam_members').insert([{ name: adminName, pin: adminPin, is_admin: true, family_id: famId }]);
+  const hashedAdminPin = await hashPin(adminPin);
+  await sb.from('fam_members').insert([{ name: adminName, pin: hashedAdminPin, is_admin: true, family_id: famId }]);
   
   // Insert default room
   await sb.from('fam_rooms').insert([{ name: 'General', family_id: famId }]);
@@ -979,7 +991,19 @@ async function doLogin() {
   currentFamilyId = famId;
   await loadMembers();
   
-  const member = members.find(m => m.pin === pin);
+  const hashedPin = await hashPin(pin);
+  let member = members.find(m => m.pin === hashedPin);
+  
+  // Auto-migrate: if no hash match, try plain text (old PIN) and upgrade
+  if (!member) {
+    const plainMember = members.find(m => m.pin === pin);
+    if (plainMember) {
+      // Migrate to hashed
+      await sb.from('fam_members').update({ pin: hashedPin }).eq('id', plainMember.id);
+      member = plainMember;
+    }
+  }
+  
   if (!member) {
     document.getElementById('loginError').textContent = 'Invalid PIN. Try again.';
     currentFamilyId = null;
@@ -1327,7 +1351,8 @@ async function addMember() {
   const pin = pinInput ? pinInput.value.trim() : '';
   if (!name) return;
   if (!pin || pin.length < 4) { showToast('PIN must be at least 4 digits'); return; }
-  const { error } = await sb.from('fam_members').insert({ name, pin, is_admin: false, family_id: currentFamilyId });
+  const hashedPin = await hashPin(pin);
+  const { error } = await sb.from('fam_members').insert({ name, pin: hashedPin, is_admin: false, family_id: currentFamilyId });
   if (error) { showToast('Error adding member'); return; }
   input.value = '';
   if (pinInput) pinInput.value = '';
@@ -1431,7 +1456,8 @@ async function sendSOS() {
 
 async function updatePin(id, pin) {
   if (!pin || pin.length < 4) { showToast('PIN must be at least 4 digits'); return; }
-  const { error } = await sb.from('fam_members').update({ pin }).eq('id', id);
+  const hashedPin = await hashPin(pin);
+  const { error } = await sb.from('fam_members').update({ pin: hashedPin }).eq('id', id);
   if (error) { showToast('Error updating PIN'); return; }
   await loadMembers();
   showToast('PIN updated ✓');
