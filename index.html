@@ -1343,18 +1343,48 @@ async function renderAdminPanel() {
   members.forEach(m => {
     const row = document.createElement('div');
     row.className = 'item-row';
-    row.innerHTML = `
-      <div class="item-row-name">
-        ${m.name}
-        ${m.is_admin ? '<span class="admin-tag">ADMIN</span>' : ''}
-      </div>
-      <div style="display:flex;gap:6px;align-items:center;">
-        <input type="password" placeholder="PIN" value="${m.pin || ''}" maxlength="6" inputmode="numeric"
-          style="width:80px;background:var(--surface);border:1.5px solid var(--surface2);border-radius:6px;padding:5px 8px;color:var(--text);font-size:13px;font-family:Inter,sans-serif;"
-          onchange="updatePin(${m.id}, this.value)">
-        ${m.name !== currentUser ? `<button class="del-btn" onclick="deleteMember(${m.id}, '${m.name}')">Remove</button>` : '<span style="font-size:11px;color:var(--text-muted)">You</span>'}
-      </div>
-    `;
+
+    // Name section - safe textContent
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'item-row-name';
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = m.name;
+    nameDiv.appendChild(nameSpan);
+    if (m.is_admin) {
+      const tag = document.createElement('span');
+      tag.className = 'admin-tag';
+      tag.textContent = 'ADMIN';
+      nameDiv.appendChild(tag);
+    }
+
+    // Actions section
+    const actionsDiv = document.createElement('div');
+    actionsDiv.style.cssText = 'display:flex;gap:6px;align-items:center;';
+
+    const pinInput = document.createElement('input');
+    pinInput.type = 'password';
+    pinInput.placeholder = 'PIN';
+    pinInput.maxLength = 6;
+    pinInput.setAttribute('inputmode', 'numeric');
+    pinInput.style.cssText = 'width:80px;background:var(--surface);border:1.5px solid var(--surface2);border-radius:6px;padding:5px 8px;color:var(--text);font-size:13px;font-family:Inter,sans-serif;';
+    pinInput.onchange = () => updatePin(m.id, pinInput.value);
+    actionsDiv.appendChild(pinInput);
+
+    if (m.name !== currentUser) {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del-btn';
+      delBtn.textContent = 'Remove';
+      delBtn.onclick = () => deleteMember(m.id, m.name);
+      actionsDiv.appendChild(delBtn);
+    } else {
+      const youSpan = document.createElement('span');
+      youSpan.style.cssText = 'font-size:11px;color:var(--text-muted)';
+      youSpan.textContent = 'You';
+      actionsDiv.appendChild(youSpan);
+    }
+
+    row.appendChild(nameDiv);
+    row.appendChild(actionsDiv);
     ml.appendChild(row);
   });
 
@@ -1363,10 +1393,25 @@ async function renderAdminPanel() {
   rooms.forEach(r => {
     const row = document.createElement('div');
     row.className = 'item-row';
-    row.innerHTML = `
-      <div class="item-row-name"># ${r.name}</div>
-      ${rooms.length > 1 ? `<button class="del-btn" onclick="deleteRoom(${r.id}, '${r.name}')">Delete</button>` : '<span style="font-size:11px;color:var(--text-muted)">Default</span>'}
-    `;
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'item-row-name';
+    nameDiv.textContent = '# ' + r.name;
+
+    if (rooms.length > 1) {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del-btn';
+      delBtn.textContent = 'Delete';
+      delBtn.onclick = () => deleteRoom(r.id, r.name);
+      row.appendChild(nameDiv);
+      row.appendChild(delBtn);
+    } else {
+      const defSpan = document.createElement('span');
+      defSpan.style.cssText = 'font-size:11px;color:var(--text-muted)';
+      defSpan.textContent = 'Default';
+      row.appendChild(nameDiv);
+      row.appendChild(defSpan);
+    }
     rl.appendChild(row);
   });
 }
