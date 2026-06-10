@@ -694,8 +694,14 @@
 
     <div class="section-head">Members</div>
     <div id="membersList"></div>
+    <div style="display:flex;gap:6px;margin-bottom:4px;padding:0 2px;">
+      <div style="flex:1;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">Name</div>
+      <div style="width:78px;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;text-align:center;">PIN</div>
+      <div style="width:52px;"></div>
+    </div>
     <div class="add-row">
-      <input type="text" class="input" id="newMemberInput" placeholder="New member name">
+      <input type="text" class="input" id="newMemberInput" placeholder="Member name" style="flex:1;">
+      <input type="password" class="input" id="newMemberPin" placeholder="PIN" maxlength="6" inputmode="numeric" style="width:78px;text-align:center;">
       <button class="btn-add" onclick="addMember()">Add</button>
     </div>
 
@@ -1260,13 +1266,16 @@ async function renderAdminPanel() {
 
 async function addMember() {
   const input = document.getElementById('newMemberInput');
+  const pinInput = document.getElementById('newMemberPin');
   const name = input.value.trim();
+  const pin = pinInput ? pinInput.value.trim() : '';
   if (!name) return;
-  const { error } = await sb.from('fam_members').insert({ name, is_admin: false });
+  if (!pin || pin.length < 4) { showToast('PIN must be at least 4 digits'); return; }
+  const { error } = await sb.from('fam_members').insert({ name, pin, is_admin: false, family_id: currentFamilyId });
   if (error) { showToast('Error adding member'); return; }
   input.value = '';
+  if (pinInput) pinInput.value = '';
   await loadMembers();
-  renderNameGrid();
   renderAdminPanel();
   showToast(`${name} added ✓`);
 }
