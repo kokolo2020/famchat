@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0F1923">
+<meta name="theme-color" content="#0D0A0A">
 <title>SOSFam</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -13,17 +13,17 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
-    --bg: #0F1923;
-    --surface: #1A2A3A;
-    --surface2: #243446;
-    --accent: #00C9A7;
-    --accent-dim: #00C9A720;
-    --danger: #FF6B6B;
+    --bg: #0D0A0A;
+    --surface: #1A0F0F;
+    --surface2: #2A1515;
+    --accent: #FF3B3B;
+    --accent-dim: #FF3B3B20;
+    --danger: #FF3B3B;
     --text: #F5F5F5;
-    --text-muted: #8A9BB0;
-    --mine: #00C9A7;
-    --mine-text: #0F1923;
-    --other: #1A2A3A;
+    --text-muted: #7A6A6A;
+    --mine: #FF3B3B;
+    --mine-text: #FFFFFF;
+    --other: #1A0F0F;
     --radius: 18px;
     --radius-sm: 10px;
   }
@@ -581,7 +581,7 @@
 <div id="loginScreen" class="screen active">
   <div class="login-box">
     <div class="login-logo">
-      <span class="icon">🏠</span>
+      <span class="icon">🆘</span>
       <h1>SOSFam</h1>
       <p>Your family, always connected</p>
       <span class="emergency-badge">EMERGENCY CHAT</span>
@@ -665,13 +665,20 @@
       </div>
     </div>
     <div class="header-actions">
-      <button class="icon-btn" id="sosBtn" onclick="sendSOS()" title="SOS" style="display:none;background:rgba(255,107,107,0.2);color:#FF6B6B;font-weight:700;font-size:13px;padding:8px 12px;border-radius:8px;letter-spacing:0.5px;">🆘 SOS</button>
+      <div id="countdownTimer" style="display:none;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--surface2);border-radius:6px;padding:5px 8px;">
+        <span style="font-size:11px;">⏱</span>
+        <span id="countdownDisplay" style="font-size:13px;font-weight:600;color:var(--text-muted);font-variant-numeric:tabular-nums;">3:00</span>
+      </div>
+      <button class="icon-btn" id="sosBtn" onclick="sendSOS()" title="SOS" style="display:none;background:rgba(255,59,59,0.2);color:#FF3B3B;font-weight:700;font-size:13px;padding:8px 12px;border-radius:8px;letter-spacing:0.5px;">🆘 SOS</button>
       <button class="icon-btn" id="adminBtn" onclick="openAdmin()" title="Admin" style="display:none">⚙️</button>
       <button class="icon-btn" onclick="doLogout()" title="Logout">🚪</button>
     </div>
   </div>
 
   <div class="room-tabs" id="roomTabs"></div>
+  <div id="countdownBar" style="display:none;height:3px;background:var(--surface2);">
+    <div id="countdownBarFill" style="height:3px;background:#FF3B3B;width:100%;transition:width 1s linear;"></div>
+  </div>
 
   <div class="messages-wrap" id="messagesWrap">
     <div class="empty-state" id="emptyState">
@@ -787,6 +794,67 @@ window.addEventListener('popstate', (e) => {
     history.pushState({ page: 'goodbye' }, '');
   }
 });
+
+// ── COUNTDOWN TIMER (3 mins) ──
+const SESSION_DURATION = 3 * 60; // 3 minutes in seconds
+let countdownInterval = null;
+let secondsLeft = SESSION_DURATION;
+
+function startCountdown() {
+  secondsLeft = SESSION_DURATION;
+  const timer = document.getElementById('countdownTimer');
+  const bar = document.getElementById('countdownBar');
+  timer.style.display = 'flex';
+  bar.style.display = 'block';
+  updateCountdownDisplay();
+
+  countdownInterval = setInterval(() => {
+    secondsLeft--;
+    updateCountdownDisplay();
+    if (secondsLeft <= 0) {
+      clearInterval(countdownInterval);
+      showToast('Session expired — logging out');
+      setTimeout(() => doLogout(), 1500);
+    }
+  }, 1000);
+}
+
+function stopCountdown() {
+  clearInterval(countdownInterval);
+  countdownInterval = null;
+  const timer = document.getElementById('countdownTimer');
+  const bar = document.getElementById('countdownBar');
+  if (timer) timer.style.display = 'none';
+  if (bar) bar.style.display = 'none';
+}
+
+function updateCountdownDisplay() {
+  const mins = Math.floor(secondsLeft / 60);
+  const secs = secondsLeft % 60;
+  const display = `${mins}:${secs.toString().padStart(2, '0')}`;
+  const el = document.getElementById('countdownDisplay');
+  const fill = document.getElementById('countdownBarFill');
+  const timer = document.getElementById('countdownTimer');
+  const pct = (secondsLeft / SESSION_DURATION) * 100;
+
+  if (el) el.textContent = display;
+  if (fill) fill.style.width = pct + '%';
+
+  // Color changes
+  if (secondsLeft <= 30) {
+    if (el) el.style.color = '#FF3B3B';
+    if (fill) fill.style.background = '#FF3B3B';
+    if (timer) timer.style.borderColor = '#FF3B3B';
+  } else if (secondsLeft <= 60) {
+    if (el) el.style.color = '#FF9F43';
+    if (fill) fill.style.background = '#FF9F43';
+    if (timer) timer.style.borderColor = '#FF9F43';
+  } else {
+    if (el) el.style.color = 'var(--text-muted)';
+    if (fill) fill.style.background = '#FF3B3B';
+    if (timer) timer.style.borderColor = 'var(--surface2)';
+  }
+}
 
 // ── INACTIVITY TIMER ──
 const INACTIVITY_MS = 5 * 60 * 1000; // 5 minutes
@@ -994,6 +1062,7 @@ async function enterChat() {
   renderRoomTabs();
   await loadMessages();
   subscribeRealtime();
+  startCountdown();
   showScreen('chatScreen');
 }
 
@@ -1002,6 +1071,7 @@ function doLogout() {
   currentUser = null;
   currentRoom = null;
   stopInactivityTimer();
+  stopCountdown();
   if (realtimeSub) { sb.removeChannel(realtimeSub); realtimeSub = null; }
   document.getElementById('codeInput').value = '';
   document.getElementById('loginBtn').disabled = true;
