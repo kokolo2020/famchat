@@ -629,10 +629,16 @@
     </div>
     <div id="regStep1">
       <div class="field-label">Family Name</div>
-      <input type="text" id="regFamilyName" class="input" placeholder="e.g. The Pich Family" oninput="checkRegReady()">
+      <input type="text" id="regFamilyName" class="input" placeholder="e.g. Pich" oninput="updateFamIdPreview()">
+      <div class="field-label" style="margin-top:12px;">Choose 4 digits for your Family ID</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="text" id="regFamDigits" class="input" placeholder="e.g. 1234" maxlength="4" inputmode="numeric" style="width:100px;text-align:center;letter-spacing:4px;font-size:18px;" oninput="updateFamIdPreview()">
+        <div style="flex:1;background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px;font-size:14px;font-weight:600;color:var(--accent);letter-spacing:2px;" id="famIdPreview">PICH1234</div>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">This is your Family ID — share it with members</div>
       <div class="field-label" style="margin-top:12px;">Your Name</div>
       <input type="text" id="regAdminName" class="input" placeholder="Your name" oninput="checkRegReady()">
-      <div class="field-label" style="margin-top:12px;">Choose Your PIN (4-6 digits)</div>
+      <div class="field-label" style="margin-top:12px;">Your PIN (4-6 digits)</div>
       <input type="password" id="regAdminPin" class="input" placeholder="••••••" maxlength="6" inputmode="numeric" oninput="checkRegReady()">
       <button class="btn-primary" id="regBtn" disabled onclick="doRegister()" style="margin-top:16px;">Create Family</button>
       <div class="error-msg" id="regError"></div>
@@ -909,9 +915,18 @@ function checkLoginReady() {
 
 function checkRegReady() {
   const name = document.getElementById('regFamilyName').value.trim();
+  const digits = document.getElementById('regFamDigits').value.trim();
   const admin = document.getElementById('regAdminName').value.trim();
   const pin = document.getElementById('regAdminPin').value.trim();
-  document.getElementById('regBtn').disabled = name.length < 2 || admin.length < 2 || pin.length < 4;
+  document.getElementById('regBtn').disabled = name.length < 2 || digits.length !== 4 || admin.length < 2 || pin.length < 4;
+}
+
+function updateFamIdPreview() {
+  const name = document.getElementById('regFamilyName').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+  const digits = document.getElementById('regFamDigits').value.trim();
+  const preview = (name || 'NAME') + (digits || '0000');
+  document.getElementById('famIdPreview').textContent = preview;
+  checkRegReady();
 }
 
 function showRegister() {
@@ -943,7 +958,9 @@ async function doRegister() {
   btn.textContent = 'Creating...';
   
   // Generate unique family ID
-  let famId = generateFamilyId();
+  const famName = document.getElementById('regFamilyName').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+  const famDigits = document.getElementById('regFamDigits').value.trim();
+  let famId = famName + famDigits;
   
   // Insert family
   const { error: famErr } = await sb.from('fam_families').insert([{ family_id: famId, family_name: familyName }]);
