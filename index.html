@@ -629,7 +629,7 @@
     </div>
     <div id="regStep1">
       <div class="field-label">Family Name</div>
-      <input type="text" id="regFamilyName" class="input" placeholder="e.g. Pich" oninput="updateFamIdPreview()">
+      <input type="text" id="regFamilyName" class="input" placeholder="e.g. Pich (letters only)" oninput="updateFamIdPreview()">
       <div class="field-label" style="margin-top:12px;">Choose 4 digits for your Family ID</div>
       <div style="display:flex;gap:8px;align-items:center;">
         <input type="text" id="regFamDigits" class="input" placeholder="e.g. 1234" maxlength="4" inputmode="numeric" style="width:100px;text-align:center;letter-spacing:4px;font-size:18px;" oninput="updateFamIdPreview()">
@@ -922,9 +922,10 @@ function checkRegReady() {
 }
 
 function updateFamIdPreview() {
-  const name = document.getElementById('regFamilyName').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+  const raw = document.getElementById('regFamilyName').value.trim();
+  const name = raw.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 10); // letters only
   const digits = document.getElementById('regFamDigits').value.trim();
-  const preview = (name || 'NAME') + (digits || '0000');
+  const preview = (name || 'NAME') + (digits.length === 4 ? digits : '____');
   document.getElementById('famIdPreview').textContent = preview;
   checkRegReady();
 }
