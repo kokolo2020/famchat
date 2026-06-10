@@ -812,6 +812,12 @@ async function loadMembers() {
   members = data || [];
 }
 
+async function loadFamily() {
+  if (!currentFamilyId) return;
+  const { data } = await sb.from('fam_families').select('*').eq('family_id', currentFamilyId).single();
+  currentFamily = data || null;
+}
+
 async function loadRooms() {
   const { data } = await sb.from('fam_rooms').select('*').eq('family_id', currentFamilyId).order('created_at');
   rooms = data || [];
@@ -824,6 +830,7 @@ async function loadRooms() {
 // ── LOGIN ──
 let selectedName = null;
 let currentFamilyId = null;
+let currentFamily = null; // full family record including is_premium, telegram_chat_id
 
 function renderNameGrid() {} // no-op, kept for compatibility
 
@@ -954,11 +961,24 @@ async function sendSOSFromLogin() {
 }
 
 async function enterChat() {
+  await loadFamily();
   await loadRooms();
   currentRoom = rooms[0];
 
   document.getElementById('headerUser').textContent = currentUser;
-  document.getElementById('sosBtn').style.display = 'block';
+  const sosBtn = document.getElementById('sosBtn');
+  sosBtn.style.display = 'block';
+  if (currentFamily?.is_premium) {
+    sosBtn.style.opacity = '1';
+    sosBtn.style.cursor = 'pointer';
+    sosBtn.disabled = false;
+    sosBtn.title = 'Send SOS Alert';
+  } else {
+    sosBtn.style.opacity = '0.4';
+    sosBtn.style.cursor = 'not-allowed';
+    sosBtn.disabled = true;
+    sosBtn.title = 'Upgrade to Premium to enable SOS';
+  }
   resetInactivityTimer();
   lockHistory();
 
@@ -1316,6 +1336,10 @@ function showToast(msg) {
 }
 
 async function sendSOS() {
+  if (!currentFamily?.is_premium) {
+    showToast('⭐ Upgrade to Premium to enable SOS');
+    return;
+  }
   const btn = document.getElementById('sosBtn');
   btn.disabled = true;
   btn.textContent = '🆘 Sending...';
@@ -1325,6 +1349,8 @@ async function sendSOS() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: currentUser,
+        family: currentFamily?.family_name || currentFamilyId,
+        telegram_chat_id: currentFamily?.telegram_chat_id || '443876741',
         timestamp: new Date().toLocaleString('en-GB', { timeZone: 'Asia/Bangkok' })
       })
     });
