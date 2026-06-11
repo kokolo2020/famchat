@@ -1,194 +1,1610 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SOSFam — Family Emergency Chat</title>
-  <meta name="description" content="Private emergency chat for families. No download, no account. Just open the link, enter your PIN, and connect with your family instantly.">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:Inter,Arial,sans-serif;background:#fff;color:#0A1525}
-    a{text-decoration:none}
-    .page{max-width:860px;margin:0 auto;padding:0 20px}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0D0A0A">
+<title>SOSFam</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    nav{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid #EEF2F7}
-    .logo{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:800;color:#0A1525}
-    .logo-icon{width:34px;height:34px;background:#00C9A7;border-radius:9px;display:grid;place-items:center;font-size:16px}
-    .btn-nav{background:#00C9A7;color:white;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:700}
+  :root {
+    --bg: #0D0A0A;
+    --surface: #1A0F0F;
+    --surface2: #2A1515;
+    --accent: #FF3B3B;
+    --accent-dim: #FF3B3B20;
+    --danger: #FF3B3B;
+    --text: #F5F5F5;
+    --text-muted: #7A6A6A;
+    --mine: #FF3B3B;
+    --mine-text: #FFFFFF;
+    --other: #1A0F0F;
+    --radius: 18px;
+    --radius-sm: 10px;
+  }
 
-    .hero{text-align:center;padding:72px 0 52px}
-    .hero-badge{display:inline-flex;align-items:center;gap:6px;background:#F0FDF9;border:1px solid #B2EFE0;color:#00A88A;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;margin-bottom:20px;letter-spacing:.5px}
-    .hero h1{font-size:clamp(28px,5vw,50px);font-weight:800;line-height:1.08;letter-spacing:-1.5px;margin-bottom:16px}
-    .hero h1 span{color:#00C9A7}
-    .hero p{font-size:17px;color:#6B7A99;max-width:500px;margin:0 auto 32px;line-height:1.65}
-    .btn-primary{background:#00C9A7;color:white;border-radius:12px;padding:14px 32px;font-size:15px;font-weight:700;display:inline-block}
-    .btn-primary:hover{background:#00A88A}
+  html, body {
+    height: 100%;
+    height: -webkit-fill-available;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+  }
 
-    .stats{display:grid;grid-template-columns:repeat(3,1fr);background:#F0FDF9;border-radius:16px;overflow:hidden;margin:48px 0}
-    .stat{padding:24px;text-align:center;border-right:1px solid #B2EFE0}
-    .stat:last-child{border-right:none}
-    .stat .num{font-size:30px;font-weight:800;color:#00C9A7}
-    .stat .lbl{font-size:11px;color:#4A9A80;margin-top:3px;text-transform:uppercase;letter-spacing:.8px}
+  /* ── SCREENS ── */
+  .screen { display: none; height: 100vh; height: 100dvh; flex-direction: column; }
+  .screen.active { display: flex; }
 
-    .section-head{text-align:center;margin-bottom:36px}
-    .section-head h2{font-size:26px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
-    .section-head p{color:#6B7A99;font-size:15px}
+  /* ── LOGIN ── */
+  #loginScreen {
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: var(--bg);
+  }
 
-    .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:64px}
-    .feature{background:#F8FAFB;border:1px solid #EEF2F7;border-radius:14px;padding:22px}
-    .feature-icon{font-size:24px;margin-bottom:10px}
-    .feature h3{font-size:15px;font-weight:700;margin-bottom:5px}
-    .feature p{font-size:13px;color:#6B7A99;line-height:1.6}
+  .login-box {
+    width: 100%;
+    max-width: 380px;
+    background: var(--surface);
+    border-radius: 24px;
+    padding: 36px 28px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
 
-    .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:64px}
-    .step{border:1px solid #EEF2F7;border-radius:14px;padding:22px}
-    .step-num{width:30px;height:30px;background:#F0FDF9;border:1px solid #B2EFE0;border-radius:8px;display:grid;place-items:center;font-size:13px;font-weight:800;color:#00C9A7;margin-bottom:12px}
-    .step h3{font-size:14px;font-weight:700;margin-bottom:6px}
-    .step p{font-size:13px;color:#6B7A99;line-height:1.6}
-    .step p span{color:#00C9A7;font-weight:600}
+  .login-logo {
+    text-align: center;
+    margin-bottom: 28px;
+  }
 
-    .cta-box{background:#F0FDF9;border:1px solid #B2EFE0;border-radius:20px;padding:52px 40px;text-align:center;margin-bottom:60px}
-    .cta-box h2{font-size:26px;font-weight:800;letter-spacing:-1px;margin-bottom:8px}
-    .cta-box p{color:#6B7A99;font-size:15px;margin-bottom:24px}
+  .login-logo .icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 8px;
+  }
 
-    footer{border-top:1px solid #EEF2F7;padding:24px 0;text-align:center;color:#A0B0C8;font-size:12px}
+  .login-logo h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
 
-    @media(max-width:600px){
-      .hero{padding:48px 0 36px}
-      .stats{grid-template-columns:1fr}
-      .stat{border-right:none;border-bottom:1px solid #B2EFE0}
-      .stat:last-child{border-bottom:none}
-    }
-  </style>
+  .login-logo p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .emergency-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,107,107,0.15);
+    border: 1px solid rgba(255,107,107,0.3);
+    color: var(--danger);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-top: 8px;
+    letter-spacing: 0.3px;
+  }
+
+  .emergency-badge::before { content: '🔴'; font-size: 8px; }
+
+  .field-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 8px;
+    margin-top: 20px;
+  }
+
+  .input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1.5px solid transparent;
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 15px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .input:focus { border-color: var(--accent); }
+  .input::placeholder { color: var(--text-muted); }
+
+  .name-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .name-btn {
+    background: var(--surface2);
+    border: 1.5px solid transparent;
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .name-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .name-btn.selected { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+  .btn-primary {
+    width: 100%;
+    background: var(--accent);
+    color: var(--mine-text);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 24px;
+    font-family: 'Inter', sans-serif;
+    transition: opacity 0.2s;
+    letter-spacing: 0.2px;
+  }
+
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .error-msg {
+    color: var(--danger);
+    font-size: 13px;
+    text-align: center;
+    margin-top: 12px;
+    min-height: 18px;
+  }
+
+  /* ── CHAT ── */
+  #chatScreen { background: var(--bg); }
+
+  .chat-header {
+    background: var(--surface);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .header-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+
+  .header-icon { font-size: 22px; flex-shrink: 0; }
+
+  .header-info { min-width: 0; }
+
+  .header-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .header-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .online-dot {
+    width: 7px;
+    height: 7px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  .icon-btn {
+    background: var(--surface2);
+    border: none;
+    border-radius: 8px;
+    padding: 8px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+
+  .icon-btn:hover { background: var(--accent-dim); color: var(--accent); }
+
+  /* Room tabs */
+  .room-tabs {
+    background: var(--surface);
+    padding: 8px 12px;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+    scrollbar-width: none;
+  }
+
+  .room-tabs::-webkit-scrollbar { display: none; }
+
+  .room-tab {
+    background: var(--surface2);
+    border: 1.5px solid transparent;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .room-tab.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .room-tab:hover:not(.active) { border-color: rgba(255,255,255,0.15); color: var(--text); }
+
+  /* Messages */
+  .messages-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    scroll-behavior: smooth;
+  }
+
+  .messages-wrap::-webkit-scrollbar { width: 4px; }
+  .messages-wrap::-webkit-scrollbar-track { background: transparent; }
+  .messages-wrap::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 2px; }
+
+  .msg-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 8px;
+  }
+
+  .msg-group.mine { align-items: flex-end; }
+  .msg-group.theirs { align-items: flex-start; }
+
+  .msg-sender {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 0 10px;
+    margin-bottom: 3px;
+  }
+
+  .msg-bubble {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 15px;
+    line-height: 1.45;
+    word-break: break-word;
+    position: relative;
+  }
+
+  .msg-group.mine .msg-bubble {
+    background: var(--mine);
+    color: var(--mine-text);
+    border-bottom-right-radius: 4px;
+  }
+
+  .msg-group.theirs .msg-bubble {
+    background: var(--other);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+  }
+
+  .msg-time {
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 0 10px;
+    margin-top: 2px;
+  }
+
+  .date-divider {
+    text-align: center;
+    margin: 12px 0;
+    position: relative;
+  }
+
+  .date-divider span {
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    gap: 8px;
+    padding: 40px;
+  }
+
+  .empty-state .big-icon { font-size: 48px; }
+  .empty-state p { font-size: 14px; text-align: center; }
+
+  /* Input */
+  .chat-input-wrap {
+    background: var(--surface);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+  }
+
+  .chat-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1.5px solid transparent;
+    border-radius: 22px;
+    padding: 10px 16px;
+    font-size: 15px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: none;
+    max-height: 100px;
+    line-height: 1.4;
+  }
+
+  .chat-input:focus { border-color: var(--accent); }
+  .chat-input::placeholder { color: var(--text-muted); }
+
+  .send-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: opacity 0.2s, transform 0.1s;
+    font-size: 18px;
+  }
+
+  .send-btn:hover { opacity: 0.9; }
+  .send-btn:active { transform: scale(0.92); }
+
+  /* ── ADMIN PANEL ── */
+  #adminPanel {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  #adminPanel.open { display: flex; }
+
+  .admin-sheet {
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    max-width: 480px;
+    padding: 20px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .sheet-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+
+  .sheet-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+
+  .section-head {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 10px;
+    margin-top: 20px;
+  }
+
+  .item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    margin-bottom: 6px;
+  }
+
+  .item-row-name {
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .admin-tag {
+    font-size: 10px;
+    font-weight: 700;
+    background: var(--accent-dim);
+    color: var(--accent);
+    padding: 2px 7px;
+    border-radius: 10px;
+  }
+
+  .del-btn {
+    background: rgba(255,107,107,0.15);
+    border: none;
+    color: var(--danger);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    transition: background 0.15s;
+  }
+
+  .del-btn:hover { background: rgba(255,107,107,0.3); }
+
+  .add-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .add-row .input { flex: 1; margin: 0; }
+
+  .btn-add {
+    background: var(--accent);
+    color: var(--mine-text);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .close-sheet {
+    width: 100%;
+    background: var(--surface2);
+    border: none;
+    color: var(--text-muted);
+    border-radius: var(--radius-sm);
+    padding: 13px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 20px;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 200;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── LOADING ── */
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (min-width: 480px) {
+    .msg-bubble { max-width: 60%; }
+  }
+</style>
 </head>
 <body>
-<div class="page">
 
-  <nav>
-    <a href="/" class="logo">
-      <div class="logo-icon">🆘</div>
-      SOSFam
-    </a>
-    <a href="index.html" class="btn-nav">Open App →</a>
-  </nav>
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" class="screen active">
+  <div class="login-box">
+    <div class="login-logo">
+      <span class="icon">🆘</span>
+      <h1>SOSFam</h1>
+      <p>Your family, always connected</p>
+      <span class="emergency-badge">EMERGENCY CHAT</span>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:6px;letter-spacing:1px;">v1.0.0-beta</div>
+    </div>
 
-  <section class="hero">
-    <div class="hero-badge">
-      <span style="width:6px;height:6px;background:#00C9A7;border-radius:50%;display:inline-block;"></span>
-      Emergency Chat · v1.0.0-beta
+    <div id="pinStep">
+      <div class="field-label">Family ID</div>
+      <input type="text" id="familyIdInput" class="input" placeholder="e.g. SMITH2025" autocomplete="off" style="text-transform:uppercase;letter-spacing:1px;" oninput="checkLoginReady()">
+      <div class="field-label" style="margin-top:12px;">Your PIN</div>
+      <input type="password" id="codeInput" class="input" placeholder="••••••" autocomplete="off" maxlength="6" inputmode="numeric" oninput="checkLoginReady()">
+      <button class="btn-primary" id="loginBtn" disabled onclick="doLogin()">Enter Chat</button>
+      <div class="error-msg" id="loginError"></div>
+      <div style="text-align:center;margin-top:16px;">
+        <span style="font-size:13px;color:var(--text-muted);">New family? </span>
+        <a href="#" onclick="showRegister()" style="font-size:13px;color:var(--accent);text-decoration:none;font-weight:500;">Create your family</a>
+      </div>
     </div>
-    <h1>When your battery dies<br>and you need family —<br><span>we've got you.</span></h1>
-    <p>No app. No signup. Open any browser on any phone, enter your Family ID and PIN, and chat with your family in seconds.</p>
-    <a href="index.html" class="btn-primary">Create your family →</a>
-  </section>
 
-  <div class="stats">
-    <div class="stat">
-      <div class="num" id="stat_families">—</div>
-      <div class="lbl">Families joined</div>
-    </div>
-    <div class="stat">
-      <div class="num">0</div>
-      <div class="lbl">Downloads needed</div>
-    </div>
-    <div class="stat">
-      <div class="num">3min</div>
-      <div class="lbl">Secure session</div>
+    <div id="sosStep" style="display:none;">
+      <div style="text-align:center;margin-bottom:16px;">
+        <div style="font-size:15px;font-weight:600;color:var(--accent);">Welcome, <span id="welcomeName"></span></div>
+      </div>
+      <button onclick="sendSOSFromLogin()" id="sosLoginBtn" style="width:100%;background:rgba(255,107,107,0.15);border:1.5px solid var(--danger);color:var(--danger);border-radius:var(--radius-sm);padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;margin-bottom:10px;letter-spacing:0.3px;">SOS - Send Emergency Alert</button>
+      <button class="btn-primary" onclick="enterChatFromLogin()">Enter Chat</button>
     </div>
   </div>
-
-  <section style="margin-bottom:64px;">
-    <div class="section-head">
-      <h2>Why SOSFam</h2>
-      <p>Built for the moment when everything else fails.</p>
-    </div>
-    <div class="features">
-      <div class="feature">
-        <div class="feature-icon">📱</div>
-        <h3>No download</h3>
-        <p>Works on any phone browser — even a stranger's. No App Store, no installation.</p>
-      </div>
-      <div class="feature">
-        <div class="feature-icon">🔑</div>
-        <h3>PIN only</h3>
-        <p>No email, no phone number. Just a Family ID and a PIN you choose yourself.</p>
-      </div>
-      <div class="feature">
-        <div class="feature-icon">🆘</div>
-        <h3>SOS alert</h3>
-        <p>One tap sends an instant alert to your family — even when the app is closed.</p>
-      </div>
-      <div class="feature">
-        <div class="feature-icon">⏱</div>
-        <h3>Auto-logout</h3>
-        <p>Session closes after 3 minutes. Safe on any borrowed device.</p>
-      </div>
-      <div class="feature">
-        <div class="feature-icon">🔒</div>
-        <h3>Secure</h3>
-        <p>PIN-hashed, family data isolated, back button blocked.</p>
-      </div>
-      <div class="feature">
-        <div class="feature-icon">🌏</div>
-        <h3>Works anywhere</h3>
-        <p>Any internet — cafe WiFi, 3G, hotel lobby. For families everywhere.</p>
-      </div>
-    </div>
-  </section>
-
-  <section style="margin-bottom:64px;">
-    <div class="section-head">
-      <h2>How it works</h2>
-      <p>Set up once. Use anywhere, on any device.</p>
-    </div>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <h3>Create your family</h3>
-        <p>Choose a Family ID like <span>SMITH2025</span>. Takes 2 minutes.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <h3>Add members</h3>
-        <p>Add each person with their own PIN via the admin panel.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <h3>Share the link</h3>
-        <p>Send <span>sosfam.pro</span> + Family ID to everyone. Done.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">4</div>
-        <h3>Use in emergency</h3>
-        <p>Open any browser → enter ID + PIN → chat instantly.</p>
-      </div>
-    </div>
-  </section>
-
-  <div class="cta-box">
-    <h2>Ready in 2 minutes</h2>
-    <p>No credit card. No download. Just a link and a PIN.</p>
-    <a href="index.html" class="btn-primary">Create your family →</a>
-  </div>
-
-  <footer>© 2026 SOSFam · Not a replacement for emergency services</footer>
-
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- GOODBYE SCREEN -->
+<div id="goodbyeScreen" class="screen">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;padding:40px;text-align:center;">
+    <div style="font-size:56px;">🏠</div>
+    <div style="font-size:22px;font-weight:500;color:var(--text);">Goodbye</div>
+    <div style="font-size:14px;color:var(--text-muted);line-height:1.6;">You have been safely logged out.<br>Close this tab to continue.</div>
+  </div>
+</div>
+
+<!-- REGISTER SCREEN -->
+<div id="registerScreen" class="screen" style="align-items:center;justify-content:center;padding:24px;overflow-y:auto;">
+  <div class="login-box">
+    <div class="login-logo">
+      <span class="icon">🏠</span>
+      <h1>SOSFam</h1>
+      <p>Create your family</p>
+    </div>
+    <div id="regStep1">
+      <div class="field-label">Family Name</div>
+      <input type="text" id="regFamilyName" class="input" placeholder="e.g. Pich (letters only)" oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'');updateFamIdPreview();checkRegReady()">
+      <div class="field-label" style="margin-top:12px;">Choose 4 digits for your Family ID</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="password" id="regFamDigits" class="input" placeholder="1234" maxlength="4" inputmode="numeric" style="width:100px;text-align:center;letter-spacing:4px;font-size:18px;" oninput="updateFamIdPreview();checkRegReady()">
+        <div style="flex:1;background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px;font-size:14px;font-weight:600;color:var(--accent);letter-spacing:2px;" id="famIdPreview">SMITH2025</div>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">This is your Family ID — share it with members</div>
+      <div class="field-label" style="margin-top:12px;">Your Name</div>
+      <input type="text" id="regAdminName" class="input" placeholder="Your name" oninput="checkRegReady()">
+      <div class="field-label" style="margin-top:12px;">Your PIN (4-6 digits)</div>
+      <input type="password" id="regAdminPin" class="input" placeholder="••••••" maxlength="6" inputmode="numeric" oninput="checkRegReady()">
+      <button class="btn-primary" id="regBtn" disabled onclick="doRegister()" style="margin-top:16px;">Create Family</button>
+      <div class="error-msg" id="regError"></div>
+      <div style="text-align:center;margin-top:16px;">
+        <a href="#" onclick="showLogin()" style="font-size:13px;color:var(--accent);text-decoration:none;">Back to login</a>
+      </div>
+    </div>
+    <div id="regStep2" style="display:none;text-align:center;">
+      <div style="font-size:48px;margin-bottom:12px;">🎉</div>
+      <div style="font-size:18px;font-weight:600;color:var(--text);margin-bottom:8px;">Family Created!</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">Share this Family ID with your members:</div>
+      <div id="generatedFamilyId" style="background:var(--surface);border:2px solid var(--accent);border-radius:var(--radius-sm);padding:16px;font-size:22px;font-weight:700;color:var(--accent);letter-spacing:3px;margin-bottom:8px;"></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:24px;">Write this down — members need it to login</div>
+      <button class="btn-primary" onclick="goToChat()">Enter Chat</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT SCREEN -->
+<div id="chatScreen" class="screen">
+  <div class="chat-header">
+    <div class="header-left">
+      <span class="header-icon">🏠</span>
+      <div class="header-info">
+        <div class="header-title" id="headerRoomName">General</div>
+        <div class="header-sub">
+          <span class="online-dot"></span>
+          <span id="headerUser">You</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-actions">
+
+      <button class="icon-btn" id="sosBtn" onclick="sendSOS()" title="SOS" style="display:none;background:rgba(255,59,59,0.2);color:#FF3B3B;font-weight:700;font-size:13px;padding:8px 12px;border-radius:8px;letter-spacing:0.5px;">🆘 SOS</button>
+      <button class="icon-btn" id="adminBtn" onclick="openAdmin()" title="Admin" style="display:none">⚙️</button>
+      <button class="icon-btn" onclick="doLogout()" title="Logout">🚪</button>
+    </div>
+  </div>
+
+  <div class="room-tabs" id="roomTabs"></div>
+  <div id="countdownBar" style="display:none;background:rgba(255,59,59,0.1);border-bottom:2px solid #FF3B3B;padding:6px 14px;align-items:center;justify-content:center;gap:8px;">
+    <span style="font-size:13px;color:#FF3B3B;">⏱</span>
+    <span id="countdownDisplay" style="font-size:22px;font-weight:700;color:#FF3B3B;font-variant-numeric:tabular-nums;letter-spacing:3px;">3:00</span>
+    <span style="font-size:11px;color:#FF3B3B;opacity:0.7;">SESSION EXPIRES</span>
+  </div>
+
+  <div class="messages-wrap" id="messagesWrap">
+    <div class="empty-state" id="emptyState">
+      <span class="big-icon">💬</span>
+      <p>No messages yet.<br>Say hello to the family!</p>
+    </div>
+  </div>
+
+  <div class="chat-input-wrap">
+    <textarea class="chat-input" id="msgInput" placeholder="Message..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="send-btn" onclick="sendMessage()">➤</button>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel">
+  <div class="admin-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">⚙️ Admin Panel</div>
+
+    <div class="section-head">Members</div>
+    <div id="membersList"></div>
+    <div style="display:flex;gap:6px;margin-bottom:4px;padding:0 2px;">
+      <div style="flex:1;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">Name</div>
+      <div style="width:78px;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;text-align:center;">PIN</div>
+      <div style="width:52px;"></div>
+    </div>
+    <div class="add-row">
+      <input type="text" class="input" id="newMemberInput" placeholder="Member name" style="flex:1;">
+      <input type="password" class="input" id="newMemberPin" placeholder="PIN" maxlength="6" inputmode="numeric" style="width:78px;text-align:center;">
+      <button class="btn-add" onclick="addMember()">Add</button>
+    </div>
+
+    <div class="section-head">Rooms</div>
+    <div id="roomsList"></div>
+    <div class="add-row">
+      <input type="text" class="input" id="newRoomInput" placeholder="New room name">
+      <button class="btn-add" onclick="addRoom()">Add</button>
+    </div>
+
+    <div class="section-head" style="color:var(--danger)">Danger Zone</div>
+    <button class="del-btn" style="width:100%;padding:12px;font-size:13px;border-radius:var(--radius-sm);margin-bottom:6px;" onclick="clearRoomChat()">🗑️ Clear All Messages in Current Room</button>
+
+    <button class="close-sheet" onclick="closeAdmin()">Close</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-const sb = supabase.createClient(
-  'https://mjnigheggxtythytsqle.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qbmlnaGVnZ3h0eXRoeXRzcWxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzYwMDcsImV4cCI6MjA5NTY1MjAwN30.mh1psePuKeQ8SH5uita7BsUKd6wd5IwHVVlDmJCMA0Q',
-  { global: { headers: { 'x-app-token': 'afc5da2bce3e7e74797ed1bd8c513265bbdd12de5d09469019bda4927dd1e71d' } } }
-);
-async function loadStats() {
-  const { count } = await sb.from('fam_families').select('*', { count: 'exact', head: true });
-  const el = document.getElementById('stat_families');
-  if (el) el.textContent = count || 0;
+const SUPABASE_URL = 'https://mjnigheggxtythytsqle.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qbmlnaGVnZ3h0eXRoeXRzcWxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzYwMDcsImV4cCI6MjA5NTY1MjAwN30.mh1psePuKeQ8SH5uita7BsUKd6wd5IwHVVlDmJCMA0Q';
+// Admin status comes from fam_members.is_admin (Supabase)
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  global: {
+    headers: {
+      'x-app-token': 'afc5da2bce3e7e74797ed1bd8c513265bbdd12de5d09469019bda4927dd1e71d'
+    }
+  }
+});
+
+async function hashPin(pin) {
+  const msgBuffer = new TextEncoder().encode(pin);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
-loadStats();
+
+let currentUser = null;
+let currentRoom = null;
+let rooms = [];
+let members = [];
+let realtimeSub = null;
+let lastDate = null;
+
+// ── SESSION ──
+function saveSession(name, familyId) {
+  localStorage.setItem('famchat_user', name);
+  localStorage.setItem('famchat_family', familyId);
+}
+function loadSession() {
+  return {
+    name: localStorage.getItem('famchat_user'),
+    familyId: localStorage.getItem('famchat_family')
+  };
+}
+function clearSession() {
+  localStorage.removeItem('famchat_user');
+  localStorage.removeItem('famchat_family');
+}
+
+// ── ONLINE TRACKING ──
+let heartbeatInterval = null;
+
+async function updateLastSeen() {
+  if (!currentUser || !currentFamilyId) return;
+  const member = members.find(m => m.name === currentUser);
+  if (!member) return;
+  await sb.from('fam_members').update({ last_seen: new Date().toISOString() }).eq('id', member.id);
+}
+
+function startHeartbeat() {
+  updateLastSeen();
+  heartbeatInterval = setInterval(updateLastSeen, 30000);
+}
+
+function stopHeartbeat() {
+  clearInterval(heartbeatInterval);
+  heartbeatInterval = null;
+}
+
+function getOnlineMembers() {
+  const threshold = new Date(Date.now() - 60000);
+  return members.filter(m => m.last_seen && new Date(m.last_seen) > threshold);
+}
+
+async function logEvent(event) {
+  if (!currentFamilyId) return;
+  try {
+    await sb.from('sosfam_stats').insert({
+      event, family_id: currentFamilyId, member_name: currentUser || 'unknown'
+    });
+  } catch(e) {}
+}
+
+function updateOnlineDot() {
+  const online = getOnlineMembers();
+  const dot = document.getElementById('onlineCount');
+  if (dot) dot.textContent = online.length > 0 ? '● ' + online.length + ' online' : '';
+}
+
+// ── INIT ──
+async function init() {
+  clearSession(); // Always clear — PIN required every visit
+  document.getElementById('codeInput').addEventListener('input', checkLoginReady);
+  showScreen('loginScreen');
+}
+
+// ── BACK BUTTON BLOCK ──
+function lockHistory() {
+  // Push two states so back button stays trapped
+  history.pushState({ page: 'chat' }, '');
+  history.pushState({ page: 'chat' }, '');
+}
+
+window.addEventListener('popstate', (e) => {
+  if (currentUser) {
+    // User is logged in - block back, re-push state
+    history.pushState({ page: 'chat' }, '');
+  } else {
+    // User is logged out - keep on goodbye screen
+    history.pushState({ page: 'goodbye' }, '');
+  }
+});
+
+// ── COUNTDOWN TIMER (3 mins) ──
+const SESSION_DURATION = 3 * 60; // 3 minutes in seconds
+let countdownInterval = null;
+let secondsLeft = SESSION_DURATION;
+
+function startCountdown() {
+  secondsLeft = SESSION_DURATION;
+  const bar = document.getElementById('countdownBar');
+  bar.style.display = 'flex';
+  updateCountdownDisplay();
+
+  countdownInterval = setInterval(() => {
+    secondsLeft--;
+    updateCountdownDisplay();
+    if (secondsLeft <= 0) {
+      clearInterval(countdownInterval);
+      showToast('Session expired — logging out');
+      setTimeout(() => doLogout(), 1500);
+    }
+  }, 1000);
+}
+
+function stopCountdown() {
+  clearInterval(countdownInterval);
+  countdownInterval = null;
+  const bar = document.getElementById('countdownBar');
+  if (bar) bar.style.display = 'none';
+}
+
+function updateCountdownDisplay() {
+  const mins = Math.floor(secondsLeft / 60);
+  const secs = secondsLeft % 60;
+  const display = `${mins}:${secs.toString().padStart(2, '0')}`;
+  const el = document.getElementById('countdownDisplay');
+  const bar = document.getElementById('countdownBar');
+
+  if (el) el.textContent = display;
+
+  if (secondsLeft <= 30) {
+    if (bar) bar.style.background = 'rgba(255,59,59,0.25)';
+    if (el) el.style.color = '#FF3B3B';
+  } else if (secondsLeft <= 60) {
+    if (bar) bar.style.background = 'rgba(255,159,67,0.15)';
+    if (bar) bar.style.borderBottomColor = '#FF9F43';
+    if (el) el.style.color = '#FF9F43';
+  }
+}
+
+// ── INACTIVITY TIMER ──
+const INACTIVITY_MS = 5 * 60 * 1000; // 5 minutes
+let inactivityTimer = null;
+
+function resetInactivityTimer() {
+  if (!currentUser) return;
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(() => {
+    showToast('Auto logged out due to inactivity');
+    doLogout();
+  }, INACTIVITY_MS);
+}
+
+function stopInactivityTimer() {
+  clearTimeout(inactivityTimer);
+  inactivityTimer = null;
+}
+
+// Track user activity
+['touchstart', 'touchmove', 'mousedown', 'keydown', 'scroll'].forEach(evt => {
+  document.addEventListener(evt, () => resetInactivityTimer(), { passive: true });
+});
+
+async function loadMembers() {
+  let query = sb.from('fam_members').select('*').order('created_at');
+  if (currentFamilyId) query = query.eq('family_id', currentFamilyId);
+  const { data } = await query;
+  members = data || [];
+}
+
+async function loadFamily() {
+  if (!currentFamilyId) return;
+  const { data } = await sb.from('fam_families').select('*').eq('family_id', currentFamilyId).single();
+  currentFamily = data || null;
+}
+
+async function loadRooms() {
+  const { data } = await sb.from('fam_rooms').select('*').eq('family_id', currentFamilyId).order('created_at');
+  rooms = data || [];
+  if (!rooms.length) {
+    const { data: inserted } = await sb.from('fam_rooms').insert([{ name: 'General', family_id: currentFamilyId }]).select();
+    rooms = inserted || [{ name: 'General', family_id: currentFamilyId }];
+  }
+}
+
+// ── LOGIN ──
+let selectedName = null;
+let currentFamilyId = null;
+let currentFamily = null; // full family record including is_premium, telegram_chat_id
+
+function renderNameGrid() {} // no-op, kept for compatibility
+
+function checkLoginReady() {
+  const pin = document.getElementById('codeInput').value.trim();
+  const famId = document.getElementById('familyIdInput').value.trim();
+  document.getElementById('loginBtn').disabled = pin.length < 4 || famId.length < 4;
+}
+
+function checkRegReady() {
+  const name = document.getElementById('regFamilyName').value.trim();
+  const digits = document.getElementById('regFamDigits').value.trim();
+  const admin = document.getElementById('regAdminName').value.trim();
+  const pin = document.getElementById('regAdminPin').value.trim();
+  document.getElementById('regBtn').disabled = name.length < 2 || digits.length !== 4 || admin.length < 2 || pin.length < 4;
+}
+
+function updateFamIdPreview() {
+  const raw = document.getElementById('regFamilyName').value.trim();
+  const name = raw.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 10); // letters only
+  const digits = document.getElementById('regFamDigits').value.trim();
+  const preview = (name || 'NAME') + (digits.length === 4 ? digits : '____');
+  document.getElementById('famIdPreview').textContent = preview;
+  checkRegReady();
+}
+
+function showRegister() {
+  showScreen('registerScreen');
+}
+
+function showLogin() {
+  showScreen('loginScreen');
+}
+
+function generateFamilyId() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let id = 'SF-';
+  for (let i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  id += '-';
+  for (let i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  id += '-';
+  for (let i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return id;
+}
+
+async function doRegister() {
+  const familyName = document.getElementById('regFamilyName').value.trim();
+  const adminName = document.getElementById('regAdminName').value.trim();
+  const adminPin = document.getElementById('regAdminPin').value.trim();
+  const btn = document.getElementById('regBtn');
+  
+  btn.disabled = true;
+  btn.textContent = 'Creating...';
+  
+  // Generate unique family ID
+  const famName = document.getElementById('regFamilyName').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+  const famDigits = document.getElementById('regFamDigits').value.trim();
+  let famId = famName + famDigits;
+  
+  // Check if Family ID already taken
+  const { data: existing } = await sb.from('fam_families').select('family_id').eq('family_id', famId).single();
+  if (existing) {
+    document.getElementById('regError').textContent = `${famId} is already taken. Choose different digits.`;
+    btn.disabled = false;
+    btn.textContent = 'Create Family';
+    return;
+  }
+
+  // Insert family
+  const { error: famErr } = await sb.from('fam_families').insert([{ family_id: famId, family_name: familyName }]);
+  if (famErr) {
+    document.getElementById('regError').textContent = 'Error creating family. Try again.';
+    btn.disabled = false;
+    btn.textContent = 'Create Family';
+    return;
+  }
+  
+  // Insert admin member
+  const hashedAdminPin = await hashPin(adminPin);
+  await sb.from('fam_members').insert([{ name: adminName, pin: hashedAdminPin, is_admin: true, family_id: famId }]);
+  
+  // Insert default room
+  await sb.from('fam_rooms').insert([{ name: 'General', family_id: famId }]);
+  
+  // Show success
+  currentFamilyId = famId;
+  currentUser = adminName;
+  saveSession(adminName, famId);
+  await loadMembers();
+  
+  document.getElementById('generatedFamilyId').textContent = famId;
+  document.getElementById('regStep1').style.display = 'none';
+  document.getElementById('regStep2').style.display = 'block';
+}
+
+async function goToChat() {
+  enterChat();
+}
+
+async function doLogin() {
+  const pin = document.getElementById('codeInput').value.trim();
+  const famId = document.getElementById('familyIdInput').value.trim().toUpperCase();
+  
+  // Verify family exists
+  const { data: fam } = await sb.from('fam_families').select('*').eq('family_id', famId).single();
+  if (!fam) {
+    document.getElementById('loginError').textContent = 'Family ID not found.';
+    return;
+  }
+  
+  // Load members for this family
+  currentFamilyId = famId;
+  await loadMembers();
+  
+  const hashedPin = await hashPin(pin);
+  let member = members.find(m => m.pin === hashedPin);
+  
+  // Auto-migrate: if no hash match, try plain text (old PIN) and upgrade
+  if (!member) {
+    const plainMember = members.find(m => m.pin === pin);
+    if (plainMember) {
+      // Migrate to hashed
+      await sb.from('fam_members').update({ pin: hashedPin }).eq('id', plainMember.id);
+      member = plainMember;
+    }
+  }
+  
+  if (!member) {
+    document.getElementById('loginError').textContent = 'Invalid PIN. Try again.';
+    currentFamilyId = null;
+    return;
+  }
+  document.getElementById('loginError').textContent = '';
+  currentUser = member.name;
+  saveSession(member.name, famId);
+  document.getElementById('pinStep').style.display = 'none';
+  document.getElementById('welcomeName').textContent = member.name;
+  document.getElementById('sosStep').style.display = 'block';
+}
+
+function enterChatFromLogin() {
+  enterChat();
+}
+
+async function sendSOSFromLogin() {
+  const btn = document.getElementById('sosLoginBtn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  try {
+    await fetch('https://n8n.gotrichnow.com/webhook/famchat-sos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: currentUser,
+        timestamp: new Date().toLocaleString('en-GB', { timeZone: 'Asia/Bangkok' })
+      })
+    });
+    btn.textContent = 'SOS Sent!';
+    btn.style.background = 'rgba(0,201,167,0.15)';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.color = 'var(--accent)';
+  } catch(e) {
+    btn.textContent = 'Failed - try again';
+    btn.disabled = false;
+  }
+}
+
+async function enterChat() {
+  await loadFamily();
+  await loadRooms();
+  currentRoom = rooms[0];
+
+  document.getElementById('headerUser').textContent = currentUser;
+  const sosBtn = document.getElementById('sosBtn');
+  sosBtn.style.display = 'block';
+  if (currentFamily?.is_premium) {
+    sosBtn.style.opacity = '1';
+    sosBtn.style.cursor = 'pointer';
+    sosBtn.disabled = false;
+    sosBtn.title = 'Send SOS Alert';
+  } else {
+    sosBtn.style.opacity = '0.4';
+    sosBtn.style.cursor = 'not-allowed';
+    sosBtn.disabled = true;
+    sosBtn.title = 'Upgrade to Premium to enable SOS';
+  }
+  resetInactivityTimer();
+  lockHistory();
+
+  const isAdmin = members.find(m => m.name === currentUser)?.is_admin || false;
+  document.getElementById('adminBtn').style.display = isAdmin ? 'block' : 'none';
+
+  renderRoomTabs();
+  await loadMessages();
+  subscribeRealtime();
+  startCountdown();
+  startHeartbeat();
+  logEvent('login');
+  showScreen('chatScreen');
+}
+
+function doLogout() {
+  clearSession();
+  currentUser = null;
+  currentRoom = null;
+  stopInactivityTimer();
+  stopCountdown();
+  if (realtimeSub) { sb.removeChannel(realtimeSub); realtimeSub = null; }
+  document.getElementById('codeInput').value = '';
+  document.getElementById('loginBtn').disabled = true;
+  // Reset PIN/SOS steps
+  document.getElementById('pinStep').style.display = 'block';
+  document.getElementById('sosStep').style.display = 'none';
+  showScreen('goodbyeScreen');
+}
+
+// ── ROOMS ──
+function renderRoomTabs() {
+  const tabs = document.getElementById('roomTabs');
+  tabs.innerHTML = '';
+  rooms.forEach(r => {
+    const tab = document.createElement('button');
+    tab.className = 'room-tab' + (r.id === currentRoom.id ? ' active' : '');
+    tab.textContent = r.name;
+    tab.onclick = () => switchRoom(r);
+    tabs.appendChild(tab);
+  });
+}
+
+async function switchRoom(room) {
+  currentRoom = room;
+  document.getElementById('headerRoomName').textContent = room.name;
+  renderRoomTabs();
+  if (realtimeSub) { sb.removeChannel(realtimeSub); realtimeSub = null; }
+  await loadMessages();
+  subscribeRealtime();
+}
+
+// ── MESSAGES ──
+async function loadMessages() {
+  const wrap = document.getElementById('messagesWrap');
+  wrap.innerHTML = '<div class="empty-state" id="emptyState"><span class="big-icon">💬</span><p>No messages yet.<br>Say hello to the family!</p></div>';
+  lastDate = null;
+
+  const { data } = await sb
+    .from('fam_messages')
+    .select('*')
+    .eq('room_id', currentRoom.id)
+    .eq('family_id', currentFamilyId)
+    .order('created_at', { ascending: true })
+    .limit(200);
+
+  if (data && data.length > 0) {
+    document.getElementById('emptyState')?.remove();
+    const groups = groupMessages(data);
+    groups.forEach(g => appendGroup(g));
+    scrollBottom();
+  }
+}
+
+function groupMessages(msgs) {
+  const groups = [];
+  let cur = null;
+  msgs.forEach(m => {
+    if (!cur || cur.name !== m.name || timeDiff(cur.lastTime, m.created_at) > 120) {
+      cur = { name: m.name, messages: [m], lastTime: m.created_at };
+      groups.push(cur);
+    } else {
+      cur.messages.push(m);
+      cur.lastTime = m.created_at;
+    }
+  });
+  return groups;
+}
+
+function timeDiff(a, b) {
+  return Math.abs(new Date(b) - new Date(a)) / 1000;
+}
+
+function appendGroup(group) {
+  const wrap = document.getElementById('messagesWrap');
+  const empty = document.getElementById('emptyState');
+  if (empty) empty.remove();
+
+  const isMine = group.name === currentUser;
+  const msgDate = new Date(group.messages[0].created_at);
+  const dateStr = formatDate(msgDate);
+
+  if (dateStr !== lastDate) {
+    lastDate = dateStr;
+    const div = document.createElement('div');
+    div.className = 'date-divider';
+    div.innerHTML = `<span>${dateStr}</span>`;
+    wrap.appendChild(div);
+  }
+
+  const groupEl = document.createElement('div');
+  groupEl.className = `msg-group ${isMine ? 'mine' : 'theirs'}`;
+
+  if (!isMine) {
+    const sender = document.createElement('div');
+    sender.className = 'msg-sender';
+    sender.textContent = group.name;
+    groupEl.appendChild(sender);
+  }
+
+  group.messages.forEach(m => {
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    bubble.textContent = m.text;
+    groupEl.appendChild(bubble);
+  });
+
+  const time = document.createElement('div');
+  time.className = 'msg-time';
+  time.textContent = formatTime(new Date(group.messages[group.messages.length - 1].created_at));
+  groupEl.appendChild(time);
+
+  wrap.appendChild(groupEl);
+}
+
+function appendSingleMessage(msg) {
+  const wrap = document.getElementById('messagesWrap');
+  const isMine = msg.name === currentUser;
+  const msgDate = formatDate(new Date(msg.created_at));
+
+  if (msgDate !== lastDate) {
+    lastDate = msgDate;
+    const div = document.createElement('div');
+    div.className = 'date-divider';
+    div.innerHTML = `<span>${msgDate}</span>`;
+    wrap.appendChild(div);
+  }
+
+  // Try to append to last group if same sender and recent
+  const lastGroup = wrap.querySelector('.msg-group:last-of-type');
+  if (lastGroup) {
+    const senderEl = lastGroup.querySelector('.msg-sender');
+    const lastName = senderEl ? senderEl.textContent : (isMine ? currentUser : null);
+    const lastIsMine = lastGroup.classList.contains('mine');
+    if ((isMine && lastIsMine) || (!isMine && !lastIsMine && lastName === msg.name)) {
+      const timeEl = lastGroup.querySelector('.msg-time');
+      const bubble = document.createElement('div');
+      bubble.className = 'msg-bubble';
+      bubble.textContent = msg.text;
+      lastGroup.insertBefore(bubble, timeEl);
+      timeEl.textContent = formatTime(new Date(msg.created_at));
+      scrollBottom();
+      return;
+    }
+  }
+
+  const groupEl = document.createElement('div');
+  groupEl.className = `msg-group ${isMine ? 'mine' : 'theirs'}`;
+
+  if (!isMine) {
+    const sender = document.createElement('div');
+    sender.className = 'msg-sender';
+    sender.textContent = msg.name;
+    groupEl.appendChild(sender);
+  }
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.textContent = msg.text;
+  groupEl.appendChild(bubble);
+
+  const time = document.createElement('div');
+  time.className = 'msg-time';
+  time.textContent = formatTime(new Date(msg.created_at));
+  groupEl.appendChild(time);
+
+  wrap.appendChild(groupEl);
+  scrollBottom();
+}
+
+// ── REALTIME ──
+function subscribeRealtime() {
+  realtimeSub = sb
+    .channel('fam_messages_' + currentFamilyId + '_' + currentRoom.id)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'fam_messages',
+      filter: `room_id=eq.${currentRoom.id}`
+    }, payload => {
+      // Extra client-side family isolation check
+      if (payload.new.family_id === currentFamilyId) {
+        appendSingleMessage(payload.new);
+      }
+    })
+    .subscribe();
+}
+
+// ── SEND ──
+async function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if (!text || !currentRoom) return;
+  if (text.length > 500) { showToast('Message too long (max 500 chars)'); return; }
+
+  input.value = '';
+  autoResize(input);
+
+  const { error } = await sb.from('fam_messages').insert({
+    room_id: currentRoom.id,
+    name: currentUser,
+    text: text,
+    family_id: currentFamilyId
+  });
+
+  if (error) showToast('Failed to send. Check connection.');
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+// ── ADMIN ──
+function openAdmin() {
+  renderAdminPanel();
+  document.getElementById('adminPanel').classList.add('open');
+}
+
+function closeAdmin() {
+  document.getElementById('adminPanel').classList.remove('open');
+}
+
+async function renderAdminPanel() {
+  await loadMembers();
+  await loadRooms();
+
+  const ml = document.getElementById('membersList');
+  ml.innerHTML = '';
+  members.forEach(m => {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+
+    // Name section - safe textContent
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'item-row-name';
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = m.name;
+    nameDiv.appendChild(nameSpan);
+    if (m.is_admin) {
+      const tag = document.createElement('span');
+      tag.className = 'admin-tag';
+      tag.textContent = 'ADMIN';
+      nameDiv.appendChild(tag);
+    }
+
+    // Actions section
+    const actionsDiv = document.createElement('div');
+    actionsDiv.style.cssText = 'display:flex;gap:6px;align-items:center;';
+
+    const pinInput = document.createElement('input');
+    pinInput.type = 'password';
+    pinInput.placeholder = 'PIN';
+    pinInput.maxLength = 6;
+    pinInput.setAttribute('inputmode', 'numeric');
+    pinInput.style.cssText = 'width:80px;background:var(--surface);border:1.5px solid var(--surface2);border-radius:6px;padding:5px 8px;color:var(--text);font-size:13px;font-family:Inter,sans-serif;';
+    pinInput.onchange = () => updatePin(m.id, pinInput.value);
+    actionsDiv.appendChild(pinInput);
+
+    if (m.name !== currentUser) {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del-btn';
+      delBtn.textContent = 'Remove';
+      delBtn.onclick = () => deleteMember(m.id, m.name);
+      actionsDiv.appendChild(delBtn);
+    } else {
+      const youSpan = document.createElement('span');
+      youSpan.style.cssText = 'font-size:11px;color:var(--text-muted)';
+      youSpan.textContent = 'You';
+      actionsDiv.appendChild(youSpan);
+    }
+
+    row.appendChild(nameDiv);
+    row.appendChild(actionsDiv);
+    ml.appendChild(row);
+  });
+
+  const rl = document.getElementById('roomsList');
+  rl.innerHTML = '';
+  rooms.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'item-row-name';
+    nameDiv.textContent = '# ' + r.name;
+
+    if (rooms.length > 1) {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del-btn';
+      delBtn.textContent = 'Delete';
+      delBtn.onclick = () => deleteRoom(r.id, r.name);
+      row.appendChild(nameDiv);
+      row.appendChild(delBtn);
+    } else {
+      const defSpan = document.createElement('span');
+      defSpan.style.cssText = 'font-size:11px;color:var(--text-muted)';
+      defSpan.textContent = 'Default';
+      row.appendChild(nameDiv);
+      row.appendChild(defSpan);
+    }
+    rl.appendChild(row);
+  });
+}
+
+async function addMember() {
+  const input = document.getElementById('newMemberInput');
+  const pinInput = document.getElementById('newMemberPin');
+  const name = input.value.trim();
+  const pin = pinInput ? pinInput.value.trim() : '';
+  if (!name) return;
+  if (!pin || pin.length < 4) { showToast('PIN must be at least 4 digits'); return; }
+  const hashedPin = await hashPin(pin);
+  const { error } = await sb.from('fam_members').insert({ name, pin: hashedPin, is_admin: false, family_id: currentFamilyId });
+  if (error) { showToast('Error adding member'); return; }
+  input.value = '';
+  if (pinInput) pinInput.value = '';
+  await loadMembers();
+  renderAdminPanel();
+  showToast(`${name} added ✓`);
+}
+
+async function deleteMember(id, name) {
+  if (!confirm(`Remove ${name}?`)) return;
+  await sb.from('fam_members').delete().eq('id', id);
+  await loadMembers();
+  renderNameGrid();
+  renderAdminPanel();
+  showToast(`${name} removed`);
+}
+
+async function addRoom() {
+  const input = document.getElementById('newRoomInput');
+  const name = input.value.trim();
+  if (!name) return;
+  const { data, error } = await sb.from('fam_rooms').insert({ name }).select().single();
+  if (error) { showToast('Error adding room'); return; }
+  input.value = '';
+  await loadRooms();
+  renderRoomTabs();
+  renderAdminPanel();
+  showToast(`#${name} created ✓`);
+}
+
+async function deleteRoom(id, name) {
+  if (!confirm(`Delete #${name} and all its messages?`)) return;
+  await sb.from('fam_messages').delete().eq('room_id', id);
+  await sb.from('fam_rooms').delete().eq('id', id);
+  await loadRooms();
+  if (currentRoom.id === id) await switchRoom(rooms[0]);
+  renderRoomTabs();
+  renderAdminPanel();
+  showToast(`#${name} deleted`);
+}
+
+// ── UTILS ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function scrollBottom() {
+  const wrap = document.getElementById('messagesWrap');
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function formatTime(d) {
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDate(d) {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return 'Today';
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function sendSOS() {
+  if (!currentFamily?.is_premium) {
+    showToast('⭐ Upgrade to Premium to enable SOS');
+    return;
+  }
+  const btn = document.getElementById('sosBtn');
+  btn.disabled = true;
+  btn.textContent = '🆘 Sending...';
+  try {
+    await fetch('https://n8n.gotrichnow.com/webhook/famchat-sos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: currentUser,
+        family: currentFamily?.family_name || currentFamilyId,
+        telegram_chat_id: currentFamily?.telegram_chat_id || '443876741',
+        timestamp: new Date().toLocaleString('en-GB', { timeZone: 'Asia/Bangkok' })
+      })
+    });
+    showToast('🆘 SOS sent!');
+    logEvent('sos');
+  } catch(e) {
+    showToast('Failed to send SOS');
+  }
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = '🆘 SOS';
+  }, 10000);
+}
+
+async function toggleAdmin(id, currentStatus) {
+  const { error } = await sb.from('fam_members').update({ is_admin: !currentStatus }).eq('id', id);
+  if (error) { showToast('Error updating admin status'); return; }
+  await loadMembers();
+  renderAdminPanel();
+  showToast('Admin status updated ✓');
+}
+
+async function updatePin(id, pin) {
+  if (!pin || pin.length < 4) { showToast('PIN must be at least 4 digits'); return; }
+  const hashedPin = await hashPin(pin);
+  const { error } = await sb.from('fam_members').update({ pin: hashedPin }).eq('id', id);
+  if (error) { showToast('Error updating PIN'); return; }
+  await loadMembers();
+  showToast('PIN updated ✓');
+}
+
+async function clearRoomChat() {
+  if (!confirm(`Clear ALL messages in #${currentRoom.name}? This cannot be undone.`)) return;
+  const { error } = await sb.from('fam_messages').delete().eq('room_id', currentRoom.id).eq('family_id', currentFamilyId);
+  if (error) { showToast('Error clearing chat'); return; }
+  await loadMessages();
+  closeAdmin();
+  showToast('Chat cleared ✓');
+}
+
+// ── START ──
+init();
+
+// Android keyboard fix - resize on visual viewport change
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    const chatScreen = document.getElementById('chatScreen');
+    if (chatScreen.classList.contains('active')) {
+      chatScreen.style.height = window.visualViewport.height + 'px';
+    }
+  });
+}
 </script>
 </body>
 </html>
