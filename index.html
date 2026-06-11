@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOSFam — Family Emergency Chat</title>
+  <meta name="description" content="Private emergency chat for families. No download, no account. Just open the link, enter your PIN, and connect with your family instantly.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Inter,Arial,sans-serif;background:#fff;color:#0A1525}
+    a{text-decoration:none}
+    .page{max-width:860px;margin:0 auto;padding:0 20px}
+
+    nav{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid #EEF2F7}
+    .logo{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:800;color:#0A1525}
+    .logo-icon{width:34px;height:34px;background:#00C9A7;border-radius:9px;display:grid;place-items:center;font-size:16px}
+    .btn-nav{background:#00C9A7;color:white;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:700}
+
+    .hero{text-align:center;padding:72px 0 52px}
+    .hero-badge{display:inline-flex;align-items:center;gap:6px;background:#F0FDF9;border:1px solid #B2EFE0;color:#00A88A;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;margin-bottom:20px;letter-spacing:.5px}
+    .hero h1{font-size:clamp(28px,5vw,50px);font-weight:800;line-height:1.08;letter-spacing:-1.5px;margin-bottom:16px}
+    .hero h1 span{color:#00C9A7}
+    .hero p{font-size:17px;color:#6B7A99;max-width:500px;margin:0 auto 32px;line-height:1.65}
+    .btn-primary{background:#00C9A7;color:white;border-radius:12px;padding:14px 32px;font-size:15px;font-weight:700;display:inline-block}
+    .btn-primary:hover{background:#00A88A}
+
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);background:#F0FDF9;border-radius:16px;overflow:hidden;margin:48px 0}
+    .stat{padding:24px;text-align:center;border-right:1px solid #B2EFE0}
+    .stat:last-child{border-right:none}
+    .stat .num{font-size:30px;font-weight:800;color:#00C9A7}
+    .stat .lbl{font-size:11px;color:#4A9A80;margin-top:3px;text-transform:uppercase;letter-spacing:.8px}
+
+    .section-head{text-align:center;margin-bottom:36px}
+    .section-head h2{font-size:26px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
+    .section-head p{color:#6B7A99;font-size:15px}
+
+    .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:64px}
+    .feature{background:#F8FAFB;border:1px solid #EEF2F7;border-radius:14px;padding:22px}
+    .feature-icon{font-size:24px;margin-bottom:10px}
+    .feature h3{font-size:15px;font-weight:700;margin-bottom:5px}
+    .feature p{font-size:13px;color:#6B7A99;line-height:1.6}
+
+    .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:64px}
+    .step{border:1px solid #EEF2F7;border-radius:14px;padding:22px}
+    .step-num{width:30px;height:30px;background:#F0FDF9;border:1px solid #B2EFE0;border-radius:8px;display:grid;place-items:center;font-size:13px;font-weight:800;color:#00C9A7;margin-bottom:12px}
+    .step h3{font-size:14px;font-weight:700;margin-bottom:6px}
+    .step p{font-size:13px;color:#6B7A99;line-height:1.6}
+    .step p span{color:#00C9A7;font-weight:600}
+
+    .cta-box{background:#F0FDF9;border:1px solid #B2EFE0;border-radius:20px;padding:52px 40px;text-align:center;margin-bottom:60px}
+    .cta-box h2{font-size:26px;font-weight:800;letter-spacing:-1px;margin-bottom:8px}
+    .cta-box p{color:#6B7A99;font-size:15px;margin-bottom:24px}
+
+    footer{border-top:1px solid #EEF2F7;padding:24px 0;text-align:center;color:#A0B0C8;font-size:12px}
+
+    @media(max-width:600px){
+      .hero{padding:48px 0 36px}
+      .stats{grid-template-columns:1fr}
+      .stat{border-right:none;border-bottom:1px solid #B2EFE0}
+      .stat:last-child{border-bottom:none}
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <nav>
+    <a href="/" class="logo">
+      <div class="logo-icon">🆘</div>
+      SOSFam
+    </a>
+    <a href="app.html" class="btn-nav">Open App →</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-badge">
+      <span style="width:6px;height:6px;background:#00C9A7;border-radius:50%;display:inline-block;"></span>
+      Emergency Chat · v1.0.0-beta
+    </div>
+    <h1>When your battery dies<br>and you need family —<br><span>we've got you.</span></h1>
+    <p>No app. No signup. Open any browser on any phone, enter your Family ID and PIN, and chat with your family in seconds.</p>
+    <a href="app.html" class="btn-primary">Create your family →</a>
+  </section>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="num" id="stat_families">—</div>
+      <div class="lbl">Families joined</div>
+    </div>
+    <div class="stat">
+      <div class="num">0</div>
+      <div class="lbl">Downloads needed</div>
+    </div>
+    <div class="stat">
+      <div class="num">3min</div>
+      <div class="lbl">Secure session</div>
+    </div>
+  </div>
+
+  <section style="margin-bottom:64px;">
+    <div class="section-head">
+      <h2>Why SOSFam</h2>
+      <p>Built for the moment when everything else fails.</p>
+    </div>
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">📱</div>
+        <h3>No download</h3>
+        <p>Works on any phone browser — even a stranger's. No App Store, no installation.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🔑</div>
+        <h3>PIN only</h3>
+        <p>No email, no phone number. Just a Family ID and a PIN you choose yourself.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🆘</div>
+        <h3>SOS alert</h3>
+        <p>One tap sends an instant alert to your family — even when the app is closed.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">⏱</div>
+        <h3>Auto-logout</h3>
+        <p>Session closes after 3 minutes. Safe on any borrowed device.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🔒</div>
+        <h3>Secure</h3>
+        <p>PIN-hashed, family data isolated, back button blocked.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🌏</div>
+        <h3>Works anywhere</h3>
+        <p>Any internet — cafe WiFi, 3G, hotel lobby. For families everywhere.</p>
+      </div>
+    </div>
+  </section>
+
+  <section style="margin-bottom:64px;">
+    <div class="section-head">
+      <h2>How it works</h2>
+      <p>Set up once. Use anywhere, on any device.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Create your family</h3>
+        <p>Choose a Family ID like <span>SMITH2025</span>. Takes 2 minutes.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Add members</h3>
+        <p>Add each person with their own PIN via the admin panel.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Share the link</h3>
+        <p>Send <span>sosfam.pro</span> + Family ID to everyone. Done.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>Use in emergency</h3>
+        <p>Open any browser → enter ID + PIN → chat instantly.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="cta-box">
+    <h2>Ready in 2 minutes</h2>
+    <p>No credit card. No download. Just a link and a PIN.</p>
+    <a href="app.html" class="btn-primary">Create your family →</a>
+  </div>
+
+  <footer>© 2026 SOSFam · Not a replacement for emergency services</footer>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const sb = supabase.createClient(
+  'https://mjnigheggxtythytsqle.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qbmlnaGVnZ3h0eXRoeXRzcWxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzYwMDcsImV4cCI6MjA5NTY1MjAwN30.mh1psePuKeQ8SH5uita7BsUKd6wd5IwHVVlDmJCMA0Q',
+  { global: { headers: { 'x-app-token': 'afc5da2bce3e7e74797ed1bd8c513265bbdd12de5d09469019bda4927dd1e71d' } } }
+);
+async function loadStats() {
+  const { count } = await sb.from('fam_families').select('*', { count: 'exact', head: true });
+  const el = document.getElementById('stat_families');
+  if (el) el.textContent = count || 0;
+}
+loadStats();
+</script>
+</body>
+</html>
