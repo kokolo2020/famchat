@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOSFam Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, sans-serif; background: #0D0A0A; color: #F5F5F5; padding: 24px; }
+    h1 { font-size: 24px; font-weight: 700; color: #FF3B3B; margin-bottom: 4px; }
+    .sub { font-size: 13px; color: #7A4A4A; margin-bottom: 24px; }
+    .live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #7A4A4A; }
+    .live-dot { width: 8px; height: 8px; background: #FF3B3B; border-radius: 50%; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: #1A0F0F; border: 1px solid #2A1515; border-radius: 16px; padding: 20px; text-align: center; }
+    .stat-card .num { font-size: 42px; font-weight: 800; color: #FF3B3B; font-variant-numeric: tabular-nums; }
+    .stat-card .label { font-size: 11px; color: #7A4A4A; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+    .section { background: #1A0F0F; border: 1px solid #2A1515; border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+    .section h2 { font-size: 14px; font-weight: 600; color: #7A4A4A; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+    
+    .family-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2A1515; }
+    .family-row:last-child { border-bottom: none; }
+    .family-id { font-size: 14px; font-weight: 600; color: #FF3B3B; letter-spacing: 1px; }
+    .family-name { font-size: 12px; color: #7A4A4A; }
+    .family-meta { font-size: 12px; color: #7A4A4A; text-align: right; }
+    
+    .event-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #2A1515; }
+    .event-row:last-child { border-bottom: none; }
+    .event-badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; }
+    .event-badge.login { background: rgba(0,201,167,0.15); color: #00C9A7; }
+    .event-badge.logout { background: rgba(122,74,74,0.3); color: #7A4A4A; }
+    .event-badge.sos { background: rgba(255,59,59,0.2); color: #FF3B3B; }
+    .event-meta { font-size: 12px; color: #7A4A4A; flex: 1; }
+    .event-time { font-size: 11px; color: #3A2020; }
+
+    .refresh-btn { background: #FF3B3B; color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+    .loading { color: #7A4A4A; font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<div class="header-row">
+  <div>
+    <h1>🆘 SOSFam Dashboard</h1>
+    <div class="sub">Private Admin View · <span class="live"><span class="live-dot"></span> Live · updates every 30s · <span id="clock"></span></span></div>
+  </div>
+  <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="num" id="stat_families">—</div>
+    <div class="label">Total Families</div>
+  </div>
+  <div class="stat-card">
+    <div class="num" id="stat_members">—</div>
+    <div class="label">Total Members</div>
+  </div>
+  <div class="stat-card">
+    <div class="num" id="stat_online">—</div>
+    <div class="label">Online Now</div>
+  </div>
+  <div class="stat-card">
+    <div class="num" id="stat_sos">—</div>
+    <div class="label">SOS Today</div>
+  </div>
+  <div class="stat-card">
+    <div class="num" id="stat_logins">—</div>
+    <div class="label">Logins Today</div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Registered Families</h2>
+  <div id="families_list"><div class="loading">Loading...</div></div>
+</div>
+
+<div class="section">
+  <h2>Recent Events (last 50)</h2>
+  <div id="events_list"><div class="loading">Loading...</div></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://mjnigheggxtythytsqle.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qbmlnaGVnZ3h0eXRoeXRzcWxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzYwMDcsImV4cCI6MjA5NTY1MjAwN30.mh1psePuKeQ8SH5uita7BsUKd6wd5IwHVVlDmJCMA0Q';
+const APP_TOKEN = 'afc5da2bce3e7e74797ed1bd8c513265bbdd12de5d09469019bda4927dd1e71d';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  global: { headers: { 'x-app-token': APP_TOKEN } }
+});
+
+function formatTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleString('en-GB', { timeZone: 'Asia/Bangkok', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+}
+
+function isOnline(last_seen) {
+  if (!last_seen) return false;
+  return new Date(Date.now() - 60000) < new Date(last_seen);
+}
+
+async function loadAll() {
+  // Families
+  const { data: families } = await sb.from('fam_families').select('*').order('created_at', { ascending: false });
+  document.getElementById('stat_families').textContent = families?.length || 0;
+
+  const fl = document.getElementById('families_list');
+  fl.innerHTML = '';
+  (families || []).forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'family-row';
+    row.innerHTML = `
+      <div>
+        <div class="family-id">${f.family_id}</div>
+        <div class="family-name">${f.family_name || '—'} ${f.is_premium ? '⭐' : ''}</div>
+      </div>
+      <div class="family-meta">
+        ${formatTime(f.created_at)}<br>
+        ${f.is_premium ? '<span style="color:#FF9F43;">Premium</span>' : 'Free'}
+      </div>
+    `;
+    fl.appendChild(row);
+  });
+
+  // Members
+  const { data: members } = await sb.from('fam_members').select('*');
+  document.getElementById('stat_members').textContent = members?.length || 0;
+  const online = (members || []).filter(m => isOnline(m.last_seen));
+  document.getElementById('stat_online').textContent = online.length;
+
+  // Stats
+  const today = new Date().toISOString().split('T')[0];
+  const { data: stats } = await sb.from('sosfam_stats').select('*').gte('created_at', today).order('created_at', { ascending: false }).limit(50);
+  
+  const sos = (stats || []).filter(s => s.event === 'sos');
+  const logins = (stats || []).filter(s => s.event === 'login');
+  document.getElementById('stat_sos').textContent = sos.length;
+  document.getElementById('stat_logins').textContent = logins.length;
+
+  // All events
+  const { data: allEvents } = await sb.from('sosfam_stats').select('*').order('created_at', { ascending: false }).limit(50);
+  const el = document.getElementById('events_list');
+  el.innerHTML = '';
+  (allEvents || []).forEach(e => {
+    const row = document.createElement('div');
+    row.className = 'event-row';
+    row.innerHTML = `
+      <span class="event-badge ${e.event}">${e.event.toUpperCase()}</span>
+      <span class="event-meta">${e.member_name || '—'} · ${e.family_id || '—'}</span>
+      <span class="event-time">${formatTime(e.created_at)}</span>
+    `;
+    el.appendChild(row);
+  });
+}
+
+// Clock
+setInterval(() => {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Bangkok' });
+}, 1000);
+
+loadAll();
+setInterval(loadAll, 30000);
+</script>
+</body>
+</html>

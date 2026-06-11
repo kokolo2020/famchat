@@ -777,6 +777,46 @@ function clearSession() {
   localStorage.removeItem('famchat_family');
 }
 
+// ── ONLINE TRACKING ──
+let heartbeatInterval = null;
+
+async function updateLastSeen() {
+  if (!currentUser || !currentFamilyId) return;
+  const member = members.find(m => m.name === currentUser);
+  if (!member) return;
+  await sb.from('fam_members').update({ last_seen: new Date().toISOString() }).eq('id', member.id);
+}
+
+function startHeartbeat() {
+  updateLastSeen();
+  heartbeatInterval = setInterval(updateLastSeen, 30000); // every 30s
+}
+
+function stopHeartbeat() {
+  clearInterval(heartbeatInterval);
+  heartbeatInterval = null;
+}
+
+function getOnlineMembers() {
+  const threshold = new Date(Date.now() - 60000); // online = seen in last 60s
+  return members.filter(m => m.last_seen && new Date(m.last_seen) > threshold);
+}
+
+async function logEvent(event) {
+  if (!currentFamilyId) return;
+  await sb.from('sosfam_stats').insert({
+    event,
+    family_id: currentFamilyId,
+    member_name: currentUser || 'unknown'
+  });
+}
+
+function updateOnlineDot() {
+  const online = getOnlineMembers();
+  const dot = document.getElementById('onlineCount');
+  if (dot) dot.textContent = online.length > 0 ? `● ${online.length} online` : '';
+}
+
 // ── INIT ──
 async function init() {
   try {
@@ -890,6 +930,7 @@ async function loadMembers() {
   if (currentFamilyId) query = query.eq('family_id', currentFamilyId);
   const { data } = await query;
   members = data || [];
+  updateOnlineDot();
 }
 
 async function loadFamily() {
@@ -1107,6 +1148,8 @@ async function enterChat() {
   await loadMessages();
   subscribeRealtime();
   startCountdown();
+  startHeartbeat();
+  logEvent('login');
   showScreen('chatScreen');
 }
 
@@ -1116,6 +1159,8 @@ function doLogout() {
   currentRoom = null;
   stopInactivityTimer();
   stopCountdown();
+  stopHeartbeat();
+  if (currentUser) logEvent('logout');
   if (realtimeSub) { sb.removeChannel(realtimeSub); realtimeSub = null; }
   document.getElementById('codeInput').value = '';
   document.getElementById('loginBtn').disabled = true;
@@ -1528,6 +1573,7 @@ async function sendSOS() {
       })
     });
     showToast('🆘 SOS sent!');
+    logEvent('sos');
   } catch(e) {
     showToast('Failed to send SOS');
   }
