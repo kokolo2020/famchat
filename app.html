@@ -46,6 +46,9 @@
   .btn-primary{width:100%;border:0;background:linear-gradient(135deg,var(--teal),var(--teal2));color:white;border-radius:var(--radius-sm);padding:14px 16px;font-size:15px;font-weight:800;cursor:pointer;margin-top:22px;box-shadow:0 12px 30px rgba(0,201,167,.16);}
   .btn-primary:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;}
   .btn-ghost{width:100%;background:var(--surface2);color:var(--muted);border:1px solid var(--line);border-radius:var(--radius-sm);padding:13px;font-size:14px;margin-top:10px;cursor:pointer;}
+  .type-row{display:flex;gap:8px;}
+  .type-chip{flex:1;background:var(--surface2);color:var(--muted);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 4px;font-size:12px;font-weight:700;cursor:pointer;}
+  .type-chip.active{background:var(--teal-dim);color:var(--teal);border-color:var(--teal);}
   .error-msg{min-height:18px;text-align:center;margin-top:11px;color:var(--red);font-size:13px;}
   .mini-note{font-size:12px;color:var(--muted);text-align:center;line-height:1.5;margin-top:14px;}
   .sos-login{width:100%;background:var(--red-dim);border:1.5px solid var(--red);color:var(--red);border-radius:var(--radius-sm);padding:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;}
@@ -109,8 +112,8 @@
     </div>
     <div id="pinStep">
       <div class="field-label">Family ID</div>
-      <input type="text" id="familyIdInput" class="input" placeholder="e.g. PICH1234" autocomplete="off" style="text-transform:uppercase;letter-spacing:1px;" oninput="checkLoginReady()">
-      <div class="field-label">Your PIN</div>
+      <input type="text" id="familyIdInput" class="input" placeholder="Enter Family ID" autocomplete="off" style="text-transform:uppercase;letter-spacing:1px;" oninput="checkLoginReady()">
+      <div class="field-label">Your PIN (4-6 digits)</div>
       <input type="password" id="codeInput" class="input" placeholder="••••••" autocomplete="off" maxlength="6" inputmode="numeric" oninput="checkLoginReady()">
       <button class="btn-primary" id="loginBtn" disabled onclick="doLogin()">Enter Family Chat</button>
       <div class="error-msg" id="loginError"></div>
@@ -128,27 +131,33 @@
 
 <div id="registerScreen" class="screen">
   <div class="login-box">
-    <div class="brand"><div class="brand-icon">🏠</div><h1>SOS<span>Fam</span></h1><p>Create your family</p></div>
+    <div class="brand"><div class="brand-icon">🏠</div><h1>SOS<span>Fam</span></h1><p>Create a new group</p></div>
     <div id="regStep1">
-      <div class="field-label">Family Name</div>
-      <input type="text" id="regFamilyName" class="input" placeholder="e.g. Pich" oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'');updateFamIdPreview();checkRegReady()">
-      <div class="field-label">Choose 4 digits</div>
+      <div class="field-label">Group Type</div>
+      <div class="type-row">
+        <button type="button" class="type-chip active" id="type-family" onclick="setGroupType('family')">👨‍👩‍👧‍👦 Family</button>
+        <button type="button" class="type-chip" id="type-friends" onclick="setGroupType('friends')">🎒 Friends</button>
+        <button type="button" class="type-chip" id="type-team" onclick="setGroupType('team')">🦺 Team</button>
+      </div>
+      <div class="field-label" id="regNameLabel">Group Name</div>
+      <input type="text" id="regFamilyName" class="input" placeholder="Group Name" oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'');updateFamIdPreview();checkRegReady()">
+      <div class="field-label">Choose 4 digits for Group ID</div>
       <div style="display:flex;gap:8px;align-items:center;">
-        <input type="password" id="regFamDigits" class="input" placeholder="1234" maxlength="4" inputmode="numeric" style="width:105px;text-align:center;letter-spacing:4px;font-size:18px;" oninput="updateFamIdPreview();checkRegReady()">
+        <input type="password" id="regFamDigits" class="input" placeholder="0000" maxlength="4" inputmode="numeric" style="width:105px;text-align:center;letter-spacing:4px;font-size:18px;" oninput="updateFamIdPreview();checkRegReady()">
         <div style="flex:1;background:var(--surface2);border-radius:12px;padding:12px 14px;font-size:14px;font-weight:800;color:var(--teal);letter-spacing:2px;" id="famIdPreview">NAME____</div>
       </div>
       <div class="field-label">Your Name</div>
       <input type="text" id="regAdminName" class="input" placeholder="Your name" oninput="checkRegReady()">
-      <div class="field-label">Your PIN</div>
+      <div class="field-label">Your PIN (4-6 digits)</div>
       <input type="password" id="regAdminPin" class="input" placeholder="4-6 digits" maxlength="6" inputmode="numeric" oninput="checkRegReady()">
-      <button class="btn-primary" id="regBtn" disabled onclick="doRegister()">Create Family</button>
+      <button class="btn-primary" id="regBtn" disabled onclick="doRegister()">Create Group</button>
       <div class="error-msg" id="regError"></div>
       <button class="btn-ghost" onclick="showLogin()">Back to login</button>
     </div>
     <div id="regStep2" style="display:none;text-align:center;">
       <div style="font-size:48px;margin-bottom:12px;">🎉</div>
-      <div style="font-size:18px;font-weight:800;margin-bottom:8px;">Family Created</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:18px;">Share this Family ID with your members:</div>
+      <div style="font-size:18px;font-weight:800;margin-bottom:8px;" id="regDoneTitle">Group Created</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:18px;"><span id="regDoneShare">Share this Group ID with your members:</span></div>
       <div id="generatedFamilyId" style="background:var(--bg);border:2px solid var(--teal);border-radius:14px;padding:16px;font-size:22px;font-weight:900;color:var(--teal);letter-spacing:3px;margin-bottom:18px;"></div>
       <button class="btn-primary" onclick="enterChat()">Enter Family Chat</button>
     </div>
@@ -164,7 +173,7 @@
 <div id="chatScreen" class="screen">
   <div class="chat-header">
     <button class="hamb" onclick="openAdmin()" id="menuBtn">☰</button>
-    <div class="header-main"><div class="header-title" id="headerRoomName">Family Chat</div><div class="header-sub"><span class="dot"></span><span id="headerUser">You</span></div></div>
+    <div class="header-main"><div class="header-title" id="headerRoomName">Family Chat</div><div class="header-sub"><span class="dot"></span><span id="headerUser">You</span> · <span id="onlineCount">1 online</span></div></div>
     <div class="header-actions"><button class="icon-btn" onclick="openInfo()" title="Emergency Info">📌</button><button class="icon-btn sos-small" onclick="openSOS()">SOS</button><button class="icon-btn" onclick="doLogout()">🚪</button></div>
   </div>
   <div id="countdownBar"><span>⏱</span><span id="countdownDisplay">3:00</span><span style="font-size:11px;color:var(--muted);">SESSION EXPIRES</span></div>
@@ -219,6 +228,25 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { global:{ headers:
 let currentUser=null,currentFamilyId=null,currentFamily=null,currentRoom=null;
 let rooms=[],members=[],emergencyInfo=[],realtimeSub=null,lastDate=null,heartbeatInterval=null,countdownInterval=null,secondsLeft=180,inactivityTimer=null;
 let optimisticIds = new Set();
+let loginAttempts = Number(localStorage.getItem('sosfam_loginAttempts') || 0);
+let lockUntil = Number(localStorage.getItem('sosfam_lockUntil') || 0);
+let regGroupType='family';
+const GROUP_LABELS={
+  family:{nameLabel:'Family Name',namePh:'Family Name',create:'Create Family',done:'Family Created',share:'Share this Family ID with your members:',suffix:'Family'},
+  friends:{nameLabel:'Group Name',namePh:'Group Name',create:'Create Friends Group',done:'Friends Group Created',share:'Share this Group ID with your friends:',suffix:'Friends'},
+  team:{nameLabel:'Team Name',namePh:'Team Name',create:'Create Team',done:'Team Created',share:'Share this Team ID with your members:',suffix:'Team'}
+};
+function setGroupType(t){
+  regGroupType=t;
+  ['family','friends','team'].forEach(x=>{const el=document.getElementById('type-'+x); if(el) el.classList.toggle('active',x===t);});
+  const L=GROUP_LABELS[t]||GROUP_LABELS.family;
+  const label=document.getElementById('regNameLabel'); if(label) label.textContent=L.nameLabel;
+  const input=document.getElementById('regFamilyName'); if(input) input.placeholder=L.namePh;
+  const btn=document.getElementById('regBtn'); if(btn && btn.textContent!=='Creating...') btn.textContent=L.create;
+  checkRegReady();
+}
+function saveLoginLock(){localStorage.setItem('sosfam_loginAttempts',String(loginAttempts));localStorage.setItem('sosfam_lockUntil',String(lockUntil));}
+function recordFailedLogin(){loginAttempts++; if(loginAttempts>=5){lockUntil=Date.now()+5*60*1000; document.getElementById('loginError').textContent='Too many attempts. Locked for 5 minutes.';}else{document.getElementById('loginError').textContent=`Invalid PIN. ${5-loginAttempts} attempts remaining.`;} saveLoginLock(); currentFamilyId=null;}
 
 async function hashPin(pin){const msg=new TextEncoder().encode(pin);const buf=await crypto.subtle.digest('SHA-256',msg);return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');}
 function isAdmin(){return !!members.find(m=>m.name===currentUser)?.is_admin;}
@@ -227,7 +255,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 
 function checkLoginReady(){const pin=document.getElementById('codeInput').value.trim();const fam=document.getElementById('familyIdInput').value.trim();document.getElementById('loginBtn').disabled=pin.length<4||fam.length<4;}
 function checkRegReady(){const name=document.getElementById('regFamilyName').value.trim();const digits=document.getElementById('regFamDigits').value.trim();const admin=document.getElementById('regAdminName').value.trim();const pin=document.getElementById('regAdminPin').value.trim();document.getElementById('regBtn').disabled=name.length<2||digits.length!==4||admin.length<2||pin.length<4;}
-function updateFamIdPreview(){const raw=document.getElementById('regFamilyName').value.trim();const name=raw.toUpperCase().replace(/[^A-Z]/g,'').slice(0,10);const digits=document.getElementById('regFamDigits').value.trim();document.getElementById('famIdPreview').textContent=(name||'NAME')+(digits.length===4?digits:'____');checkRegReady();}
+function updateFamIdPreview(){const raw=document.getElementById('regFamilyName').value.trim();const name=raw.toUpperCase().replace(/[^A-Z]/g,'').slice(0,10);const digits=document.getElementById('regFamDigits').value.trim();document.getElementById('famIdPreview').textContent=name?(name+(digits.length===4?digits:'____')):'GROUP ID';checkRegReady();}
 function showRegister(){showScreen('registerScreen');} function showLogin(){showScreen('loginScreen');} function resetLogin(){document.getElementById('pinStep').style.display='block';document.getElementById('sosStep').style.display='none';}
 
 async function loadFamily(){if(!currentFamilyId)return;const {data}=await sb.from('fam_families').select('*').eq('family_id',currentFamilyId).single();currentFamily=data||null;}
@@ -235,23 +263,24 @@ async function loadMembers(){let q=sb.from('fam_members').select('*').order('cre
 async function loadRooms(){const {data}=await sb.from('fam_rooms').select('*').eq('family_id',currentFamilyId).order('created_at');rooms=data||[];if(!rooms.length){const {data:inserted}=await sb.from('fam_rooms').insert([{name:'General',family_id:currentFamilyId}]).select();rooms=inserted||[];}currentRoom=rooms[0]||null;}
 
 async function doRegister(){const familyName=document.getElementById('regFamilyName').value.trim();const adminName=document.getElementById('regAdminName').value.trim();const adminPin=document.getElementById('regAdminPin').value.trim();const famName=familyName.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10);const famDigits=document.getElementById('regFamDigits').value.trim();const famId=famName+famDigits;const btn=document.getElementById('regBtn');btn.disabled=true;btn.textContent='Creating...';
-  const {data:existing}=await sb.from('fam_families').select('family_id').eq('family_id',famId).single();if(existing){document.getElementById('regError').textContent=famId+' is already taken.';btn.disabled=false;btn.textContent='Create Family';return;}
-  const {error:famErr}=await sb.from('fam_families').insert([{family_id:famId,family_name:familyName}]);if(famErr){document.getElementById('regError').textContent='Error creating family.';btn.disabled=false;btn.textContent='Create Family';return;}
+  const {data:existing}=await sb.from('fam_families').select('family_id').eq('family_id',famId).single();if(existing){document.getElementById('regError').textContent=famId+' is already taken.';btn.disabled=false;btn.textContent=GROUP_LABELS[regGroupType].create;return;}
+  const {error:famErr}=await sb.from('fam_families').insert([{family_id:famId,family_name:familyName}]);if(famErr){document.getElementById('regError').textContent='Error creating group.';btn.disabled=false;btn.textContent=GROUP_LABELS[regGroupType].create;return;}
+  localStorage.setItem('sosfam_group_type_'+famId, regGroupType);
   await sb.from('fam_members').insert([{name:adminName,pin:await hashPin(adminPin),is_admin:true,family_id:famId}]);await sb.from('fam_rooms').insert([{name:'General',family_id:famId}]);
-  currentFamilyId=famId;currentUser=adminName;await loadFamily();await loadMembers();await loadRooms();document.getElementById('generatedFamilyId').textContent=famId;document.getElementById('regStep1').style.display='none';document.getElementById('regStep2').style.display='block';}
+  currentFamilyId=famId;currentUser=adminName;await loadFamily();await loadMembers();await loadRooms();document.getElementById('generatedFamilyId').textContent=famId;document.getElementById('regDoneTitle').textContent=GROUP_LABELS[regGroupType].done;document.getElementById('regDoneShare').textContent=GROUP_LABELS[regGroupType].share;document.getElementById('regStep1').style.display='none';document.getElementById('regStep2').style.display='block';}
 
-async function doLogin(){const pin=document.getElementById('codeInput').value.trim();const famId=document.getElementById('familyIdInput').value.trim().toUpperCase();const {data:fam}=await sb.from('fam_families').select('*').eq('family_id',famId).single();if(!fam){document.getElementById('loginError').textContent='Family ID not found.';return;}currentFamilyId=famId;currentFamily=fam;await loadMembers();const hashed=await hashPin(pin);let member=members.find(m=>m.pin===hashed);if(!member){const plain=members.find(m=>m.pin===pin);if(plain){await sb.from('fam_members').update({pin:hashed}).eq('id',plain.id);member=plain;}}
-  if(!member){document.getElementById('loginError').textContent='Invalid PIN. Try again.';currentFamilyId=null;return;}currentUser=member.name;document.getElementById('loginError').textContent='';document.getElementById('pinStep').style.display='none';document.getElementById('welcomeName').textContent=member.name;document.getElementById('sosStep').style.display='block';}
+async function doLogin(){if(Date.now()<lockUntil){const mins=Math.ceil((lockUntil-Date.now())/60000);document.getElementById('loginError').textContent=`Too many attempts. Try again in ${mins} minute(s).`;return;}const pin=document.getElementById('codeInput').value.trim();const famId=document.getElementById('familyIdInput').value.trim().toUpperCase();const {data:fam}=await sb.from('fam_families').select('*').eq('family_id',famId).single();if(!fam){document.getElementById('loginError').textContent='Family ID not found.';return;}currentFamilyId=famId;currentFamily=fam;currentFamily.group_type=currentFamily.group_type||localStorage.getItem('sosfam_group_type_'+famId)||'family';await loadMembers();const hashed=await hashPin(pin);let member=members.find(m=>m.pin===hashed);if(!member){const plain=members.find(m=>m.pin===pin);if(plain){await sb.from('fam_members').update({pin:hashed}).eq('id',plain.id);member=plain;}}
+  if(!member){recordFailedLogin();return;}loginAttempts=0;lockUntil=0;saveLoginLock();currentUser=member.name;document.getElementById('loginError').textContent='';document.getElementById('pinStep').style.display='none';document.getElementById('welcomeName').textContent=member.name;document.getElementById('sosStep').style.display='block';}
 function enterChatFromLogin(){enterChat();}
 
-async function enterChat(){await loadFamily();await loadMembers();await loadRooms();document.getElementById('headerUser').textContent=currentUser;document.getElementById('headerRoomName').textContent=(currentFamily?.family_name?currentFamily.family_name+' Family':'Family Chat');showScreen('chatScreen');resetInactivityTimer();lockHistory();await loadEmergencyInfo();await loadMessages();subscribeRealtime();startCountdown();startHeartbeat();logEvent('login');}
+async function enterChat(){await loadFamily();currentFamily=currentFamily||{};currentFamily.group_type=currentFamily.group_type||localStorage.getItem('sosfam_group_type_'+currentFamilyId)||'family';await loadMembers();await loadRooms();document.getElementById('headerUser').textContent=currentUser;const gType=currentFamily?.group_type||'family';const suffix=GROUP_LABELS[gType]?GROUP_LABELS[gType].suffix:'Family';document.getElementById('headerRoomName').textContent=(currentFamily?.family_name?currentFamily.family_name+' '+suffix:suffix+' Chat');updateOnlineCount();showScreen('chatScreen');resetInactivityTimer();lockHistory();await loadEmergencyInfo();await loadMessages();subscribeRealtime();startCountdown();startHeartbeat();logEvent('login');}
 
 function doLogout(){currentUser=null;currentRoom=null;stopInactivityTimer();stopCountdown();stopHeartbeat();if(realtimeSub){sb.removeChannel(realtimeSub);realtimeSub=null;}document.getElementById('codeInput').value='';document.getElementById('loginBtn').disabled=true;resetLogin();showScreen('goodbyeScreen');}
 function lockHistory(){history.pushState({page:'chat'},'');history.pushState({page:'chat'},'');}window.addEventListener('popstate',()=>{history.pushState({page:currentUser?'chat':'goodbye'},'');});
 
 const INACTIVITY_MS=5*60*1000;function resetInactivityTimer(){if(!currentUser)return;clearTimeout(inactivityTimer);inactivityTimer=setTimeout(()=>{showToast('Auto logged out due to inactivity');doLogout();},INACTIVITY_MS);}function stopInactivityTimer(){clearTimeout(inactivityTimer);}['touchstart','touchmove','mousedown','keydown','scroll'].forEach(evt=>document.addEventListener(evt,resetInactivityTimer,{passive:true}));
 function startCountdown(){secondsLeft=180;document.getElementById('countdownBar').style.display='flex';updateCountdownDisplay();countdownInterval=setInterval(()=>{secondsLeft--;updateCountdownDisplay();if(secondsLeft<=0){clearInterval(countdownInterval);showToast('Session expired');setTimeout(doLogout,1200);}},1000);}function stopCountdown(){clearInterval(countdownInterval);const b=document.getElementById('countdownBar');if(b)b.style.display='none';}function updateCountdownDisplay(){const m=Math.floor(secondsLeft/60),s=secondsLeft%60;document.getElementById('countdownDisplay').textContent=`${m}:${String(s).padStart(2,'0')}`;}
-async function updateLastSeen(){if(!currentUser||!currentFamilyId)return;const member=members.find(m=>m.name===currentUser);if(member)await sb.from('fam_members').update({last_seen:new Date().toISOString()}).eq('id',member.id);}function startHeartbeat(){updateLastSeen();heartbeatInterval=setInterval(updateLastSeen,30000);}function stopHeartbeat(){clearInterval(heartbeatInterval);}async function logEvent(event){try{await sb.from('sosfam_stats').insert({event,family_id:currentFamilyId,member_name:currentUser||'unknown'});}catch(e){}}
+async function updateLastSeen(){if(!currentUser||!currentFamilyId)return;const member=members.find(m=>m.name===currentUser);if(member)await sb.from('fam_members').update({last_seen:new Date().toISOString()}).eq('id',member.id);}function startHeartbeat(){updateLastSeen();updateOnlineCount();heartbeatInterval=setInterval(async()=>{await updateLastSeen();await loadMembers();updateOnlineCount();},30000);}function stopHeartbeat(){clearInterval(heartbeatInterval);}async function logEvent(event){try{await sb.from('sosfam_stats').insert({event,family_id:currentFamilyId,member_name:currentUser||'unknown'});}catch(e){}}
 
 async function loadMessages(){const wrap=document.getElementById('messagesWrap');wrap.innerHTML='<div class="empty-state" id="emptyState"><span class="big-icon">💬</span><p>No messages yet.<br>Say hello to the family!</p></div>';lastDate=null;if(!currentRoom)return;const {data}=await sb.from('fam_messages').select('*').eq('room_id',currentRoom.id).eq('family_id',currentFamilyId).order('created_at',{ascending:true}).limit(200);if(data&&data.length){document.getElementById('emptyState')?.remove();groupMessages(data).forEach(appendGroup);scrollBottom();}}
 function groupMessages(msgs){const groups=[];let cur=null;msgs.forEach(m=>{if(!cur||cur.name!==m.name||timeDiff(cur.lastTime,m.created_at)>120){cur={name:m.name,messages:[m],lastTime:m.created_at};groups.push(cur);}else{cur.messages.push(m);cur.lastTime=m.created_at;}});return groups;}function timeDiff(a,b){return Math.abs(new Date(b)-new Date(a))/1000;}
@@ -280,6 +309,7 @@ async function updatePinPrompt(id,name){const pin=prompt('New PIN for '+name+' (
 async function deleteMember(id,name){if(!confirm('Remove '+name+'?'))return;await sb.from('fam_members').delete().eq('id',id).eq('family_id',currentFamilyId);await loadMembers();renderAdminPanel();showToast(name+' removed');}
 async function clearFamilyChat(){if(!isAdmin()){showToast('Admins only');return;}if(!confirm('Clear all chat messages? Pinned Emergency Information will remain.'))return;const {error}=await sb.from('fam_messages').delete().eq('family_id',currentFamilyId);if(error){showToast('Error clearing chat');return;}await loadMessages();closeAdmin();showToast('Chat cleared. Pinned info stayed safe.');}
 function formatRelative(iso){const diff=Math.floor((Date.now()-new Date(iso))/60000);if(diff<1)return'Online';if(diff<60)return diff+'m ago';return Math.floor(diff/60)+'h ago';}
+function updateOnlineCount(){const el=document.getElementById('onlineCount');if(!el)return;const now=Date.now();let online=members.filter(m=>m.last_seen && (now-new Date(m.last_seen).getTime())<90000).length;if(currentUser && online<1)online=1;el.textContent=online+' online';}
 
 function openSOS(){document.getElementById('sosPanel').classList.add('open');}function closeSOS(){document.getElementById('sosPanel').classList.remove('open');}
 async function sendSOSFromLogin(){await sendSOS(true);}async function sendSOS(fromLogin=false){if(!currentUser){showToast('Login first');return;}const btn=fromLogin?document.getElementById('sosLoginBtn'):null;if(btn){btn.disabled=true;btn.textContent='Sending...';}try{await fetch('https://n8n.gotrichnow.com/webhook/famchat-sos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:currentUser,family:currentFamily?.family_name||currentFamilyId,telegram_chat_id:currentFamily?.telegram_chat_id||'443876741',timestamp:new Date().toLocaleString('en-GB',{timeZone:'Asia/Bangkok'})})});showToast('🆘 SOS sent!');logEvent('sos');closeSOS();if(btn){btn.textContent='SOS Sent!';}}catch(e){showToast('Failed to send SOS');if(btn){btn.disabled=false;btn.textContent='🆘 Send SOS Alert';}}}
