@@ -115,7 +115,7 @@
       <div class="field-label">Family ID</div>
       <input type="text" id="familyIdInput" class="input" placeholder="Enter Family ID" autocomplete="off" style="text-transform:uppercase;letter-spacing:1px;" oninput="checkLoginReady()">
       <div class="field-label">6-Digit PIN</div>
-      <input type="password" id="codeInput" class="input" placeholder="••••••" autocomplete="off" maxlength="6" inputmode="numeric" pattern="\d{6}" oninput="this.value=this.value.replace(/\D/g,'');checkLoginReady()">
+      <input type="password" id="codeInput" class="input" placeholder="6-digit PIN" autocomplete="off" maxlength="6" inputmode="numeric" pattern="\d{4,6}" oninput="this.value=this.value.replace(/\D/g,'');checkLoginReady()">
       <button class="btn-primary" id="loginBtn" disabled onclick="doLogin()">Enter Family Chat</button>
       <div class="error-msg" id="loginError"></div>
       <div class="mini-note">Use the Family ID from your admin and your 6-digit PIN. Chat can be cleared by admins, but pinned emergency information stays safe.</div>
@@ -281,7 +281,7 @@ function showLockoutMessage(familyId){
   document.getElementById('loginError').textContent=`Too many wrong PIN attempts. Try again in ${m}:${s}.`;
 }
 
-function checkLoginReady(){const pin=document.getElementById('codeInput').value.trim();const fam=document.getElementById('familyIdInput').value.trim();document.getElementById('loginBtn').disabled=pin.length!==6||fam.length<4||isLoginLocked(fam);}
+function checkLoginReady(){const pin=document.getElementById('codeInput').value.trim();const fam=document.getElementById('familyIdInput').value.trim();document.getElementById('loginBtn').disabled=pin.length<4||pin.length>6||fam.length<4||isLoginLocked(fam);}
 function checkRegReady(){const name=document.getElementById('regFamilyName').value.trim();const digits=document.getElementById('regFamDigits').value.trim();const admin=document.getElementById('regAdminName').value.trim();const pin=document.getElementById('regAdminPin').value.trim();document.getElementById('regBtn').disabled=name.length<2||digits.length!==4||admin.length<2||pin.length!==6;}
 function updateFamIdPreview(){const raw=document.getElementById('regFamilyName').value.trim();const name=raw.toUpperCase().replace(/[^A-Z]/g,'').slice(0,10);const digits=document.getElementById('regFamDigits').value.trim();document.getElementById('famIdPreview').textContent=name?(name+(digits.length===4?digits:'____')):'Your ID will appear here';checkRegReady();}
 function showRegister(){showScreen('registerScreen');} function showLogin(){showScreen('loginScreen');} function resetLogin(){document.getElementById('pinStep').style.display='block';document.getElementById('sosStep').style.display='none';}
@@ -297,12 +297,14 @@ async function doRegister(){const familyName=document.getElementById('regFamilyN
   currentFamilyId=famId;currentUser=adminName;await loadFamily();await loadMembers();await loadRooms();document.getElementById('generatedFamilyId').textContent=famId;document.getElementById('regDoneTitle').textContent=GROUP_LABELS[regGroupType].done;document.getElementById('regDoneShare').textContent=GROUP_LABELS[regGroupType].share;document.getElementById('regStep1').style.display='none';document.getElementById('regStep2').style.display='block';}
 
 async function doLogin(){
+  const loginBtn=document.getElementById('loginBtn');
+  loginBtn.disabled=true;
   const pin=document.getElementById('codeInput').value.trim();
   const famId=document.getElementById('familyIdInput').value.trim().toUpperCase();
-  if(!/^\d{6}$/.test(pin)){document.getElementById('loginError').textContent='PIN must be exactly 6 digits.';return;}
-  if(isLoginLocked(famId)){showLockoutMessage(famId);return;}
+  if(!/^\d{4,6}$/.test(pin)){document.getElementById('loginError').textContent='PIN must be 4–6 digits. New PINs must be 6 digits.';checkLoginReady();return;}
+  if(isLoginLocked(famId)){showLockoutMessage(famId);checkLoginReady();return;}
   const {data:fam}=await sb.from('fam_families').select('*').eq('family_id',famId).single();
-  if(!fam){document.getElementById('loginError').textContent='Family ID not found.';return;}
+  if(!fam){document.getElementById('loginError').textContent='Family ID not found.';checkLoginReady();return;}
   currentFamilyId=famId;currentFamily=fam;await loadMembers();
   const hashed=await hashPin(pin);
   let member=members.find(m=>m.pin===hashed);
@@ -314,11 +316,13 @@ async function doLogin(){
     const failed=recordFailedLogin(famId);
     document.getElementById('loginError').textContent=failed.locked?'Too many wrong PIN attempts. Locked for 5 minutes.':`Invalid PIN. Attempts remaining: ${failed.remaining}`;
     currentFamilyId=null;
+    checkLoginReady();
     return;
   }
   resetFailedLogins(famId);
   currentUser=member.name;
   document.getElementById('loginError').textContent='';
+  if(pin.length<6){setTimeout(()=>showToast('Please ask admin to update this PIN to 6 digits.'),700);}
   document.getElementById('pinStep').style.display='none';
   document.getElementById('welcomeName').textContent=member.name;
   document.getElementById('sosStep').style.display='block';
