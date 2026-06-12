@@ -46,6 +46,10 @@
   .btn-primary{width:100%;border:0;background:linear-gradient(135deg,var(--teal),var(--teal2));color:white;border-radius:var(--radius-sm);padding:14px 16px;font-size:15px;font-weight:800;cursor:pointer;margin-top:22px;box-shadow:0 12px 30px rgba(0,201,167,.16);}
   .btn-primary:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;}
   .btn-ghost{width:100%;background:var(--surface2);color:var(--muted);border:1px solid var(--line);border-radius:var(--radius-sm);padding:13px;font-size:14px;margin-top:10px;cursor:pointer;}
+  .type-row{display:flex;gap:8px;}
+  .type-chip{flex:1;background:var(--surface2);color:var(--muted);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 4px;font-size:12px;font-weight:700;cursor:pointer;}
+  .type-chip.active{background:var(--teal-dim);color:var(--teal);border-color:var(--teal);}
+  #expiryBanner{display:none;align-items:center;gap:8px;padding:8px 14px;background:rgba(255,180,60,.12);color:#FFB43C;font-size:12px;font-weight:700;border-bottom:1px solid var(--line);}
   .error-msg{min-height:18px;text-align:center;margin-top:11px;color:var(--red);font-size:13px;}
   .mini-note{font-size:12px;color:var(--muted);text-align:center;line-height:1.5;margin-top:14px;}
   .sos-login{width:100%;background:var(--red-dim);border:1.5px solid var(--red);color:var(--red);border-radius:var(--radius-sm);padding:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;}
@@ -130,7 +134,13 @@
   <div class="login-box">
     <div class="brand"><div class="brand-icon">🏠</div><h1>SOS<span>Fam</span></h1><p>Create your family</p></div>
     <div id="regStep1">
-      <div class="field-label">Family Name</div>
+      <div class="field-label">Group Type</div>
+      <div class="type-row">
+        <button type="button" class="type-chip active" id="type-family" onclick="setGroupType('family')">👨‍👩‍👧‍👦 Family</button>
+        <button type="button" class="type-chip" id="type-friends" onclick="setGroupType('friends')">🎒 Friends</button>
+        <button type="button" class="type-chip" id="type-team" onclick="setGroupType('team')">🦺 Team</button>
+      </div>
+      <div class="field-label" id="regNameLabel">Family Name</div>
       <input type="text" id="regFamilyName" class="input" placeholder="e.g. Pich" oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'');updateFamIdPreview();checkRegReady()">
       <div class="field-label">Choose 4 digits</div>
       <div style="display:flex;gap:8px;align-items:center;">
@@ -147,8 +157,8 @@
     </div>
     <div id="regStep2" style="display:none;text-align:center;">
       <div style="font-size:48px;margin-bottom:12px;">🎉</div>
-      <div style="font-size:18px;font-weight:800;margin-bottom:8px;">Family Created</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:18px;">Share this Family ID with your members:</div>
+      <div style="font-size:18px;font-weight:800;margin-bottom:8px;" id="regDoneTitle">Family Created</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:18px;" id="regDoneShare">Share this Family ID with your members:</div>
       <div id="generatedFamilyId" style="background:var(--bg);border:2px solid var(--teal);border-radius:14px;padding:16px;font-size:22px;font-weight:900;color:var(--teal);letter-spacing:3px;margin-bottom:18px;"></div>
       <button class="btn-primary" onclick="enterChat()">Enter Family Chat</button>
     </div>
@@ -168,6 +178,7 @@
     <div class="header-actions"><button class="icon-btn" onclick="openInfo()" title="Emergency Info">📌</button><button class="icon-btn sos-small" onclick="openSOS()">SOS</button><button class="icon-btn" onclick="doLogout()">🚪</button></div>
   </div>
   <div id="countdownBar"><span>⏱</span><span id="countdownDisplay">3:00</span><span style="font-size:11px;color:var(--muted);">SESSION EXPIRES</span></div>
+  <div id="expiryBanner"><span>⏳</span><span>Free group — auto-deletes after 24h of inactivity</span></div>
   <div class="pinned-card" onclick="openInfo()">
     <div class="pinned-top"><div><div class="pinned-title">📌 Emergency Information</div><div class="pinned-sub">Important contacts stay pinned and protected</div></div><div class="chev">›</div></div>
     <div class="pinned-preview" id="pinnedPreview"></div>
@@ -219,6 +230,13 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { global:{ headers:
 let currentUser=null,currentFamilyId=null,currentFamily=null,currentRoom=null;
 let rooms=[],members=[],emergencyInfo=[],realtimeSub=null,lastDate=null,heartbeatInterval=null,countdownInterval=null,secondsLeft=180,inactivityTimer=null;
 let optimisticIds = new Set();
+let regGroupType='family';
+const GROUP_LABELS={
+  family:{nameLabel:'Family Name',namePh:'e.g. Pich',create:'Create Family',done:'Family Created',share:'Share this Family ID with your members:',suffix:'Family'},
+  friends:{nameLabel:'Group Name',namePh:'e.g. BkkTrip',create:'Create Group',done:'Group Created',share:'Share this Group ID with your friends:',suffix:'Crew'},
+  team:{nameLabel:'Team Name',namePh:'e.g. TourA',create:'Create Team',done:'Team Created',share:'Share this Team ID with your members:',suffix:'Team'}
+};
+function setGroupType(t){regGroupType=t;['family','friends','team'].forEach(x=>document.getElementById('type-'+x).classList.toggle('active',x===t));const L=GROUP_LABELS[t];document.getElementById('regNameLabel').textContent=L.nameLabel;document.getElementById('regFamilyName').placeholder=L.namePh;const btn=document.getElementById('regBtn');if(btn.textContent!=='Creating...')btn.textContent=L.create;}
 
 async function hashPin(pin){const msg=new TextEncoder().encode(pin);const buf=await crypto.subtle.digest('SHA-256',msg);return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');}
 function isAdmin(){return !!members.find(m=>m.name===currentUser)?.is_admin;}
@@ -235,16 +253,16 @@ async function loadMembers(){let q=sb.from('fam_members').select('*').order('cre
 async function loadRooms(){const {data}=await sb.from('fam_rooms').select('*').eq('family_id',currentFamilyId).order('created_at');rooms=data||[];if(!rooms.length){const {data:inserted}=await sb.from('fam_rooms').insert([{name:'General',family_id:currentFamilyId}]).select();rooms=inserted||[];}currentRoom=rooms[0]||null;}
 
 async function doRegister(){const familyName=document.getElementById('regFamilyName').value.trim();const adminName=document.getElementById('regAdminName').value.trim();const adminPin=document.getElementById('regAdminPin').value.trim();const famName=familyName.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10);const famDigits=document.getElementById('regFamDigits').value.trim();const famId=famName+famDigits;const btn=document.getElementById('regBtn');btn.disabled=true;btn.textContent='Creating...';
-  const {data:existing}=await sb.from('fam_families').select('family_id').eq('family_id',famId).single();if(existing){document.getElementById('regError').textContent=famId+' is already taken.';btn.disabled=false;btn.textContent='Create Family';return;}
-  const {error:famErr}=await sb.from('fam_families').insert([{family_id:famId,family_name:familyName}]);if(famErr){document.getElementById('regError').textContent='Error creating family.';btn.disabled=false;btn.textContent='Create Family';return;}
+  const {data:existing}=await sb.from('fam_families').select('family_id').eq('family_id',famId).single();if(existing){document.getElementById('regError').textContent=famId+' is already taken.';btn.disabled=false;btn.textContent=GROUP_LABELS[regGroupType].create;return;}
+  const {error:famErr}=await sb.from('fam_families').insert([{family_id:famId,family_name:familyName,group_type:regGroupType}]);if(famErr){document.getElementById('regError').textContent='Error creating group.';btn.disabled=false;btn.textContent=GROUP_LABELS[regGroupType].create;return;}
   await sb.from('fam_members').insert([{name:adminName,pin:await hashPin(adminPin),is_admin:true,family_id:famId}]);await sb.from('fam_rooms').insert([{name:'General',family_id:famId}]);
-  currentFamilyId=famId;currentUser=adminName;await loadFamily();await loadMembers();await loadRooms();document.getElementById('generatedFamilyId').textContent=famId;document.getElementById('regStep1').style.display='none';document.getElementById('regStep2').style.display='block';}
+  currentFamilyId=famId;currentUser=adminName;await loadFamily();await loadMembers();await loadRooms();document.getElementById('generatedFamilyId').textContent=famId;document.getElementById('regDoneTitle').textContent=GROUP_LABELS[regGroupType].done;document.getElementById('regDoneShare').textContent=GROUP_LABELS[regGroupType].share;document.getElementById('regStep1').style.display='none';document.getElementById('regStep2').style.display='block';}
 
 async function doLogin(){const pin=document.getElementById('codeInput').value.trim();const famId=document.getElementById('familyIdInput').value.trim().toUpperCase();const {data:fam}=await sb.from('fam_families').select('*').eq('family_id',famId).single();if(!fam){document.getElementById('loginError').textContent='Family ID not found.';return;}currentFamilyId=famId;currentFamily=fam;await loadMembers();const hashed=await hashPin(pin);let member=members.find(m=>m.pin===hashed);if(!member){const plain=members.find(m=>m.pin===pin);if(plain){await sb.from('fam_members').update({pin:hashed}).eq('id',plain.id);member=plain;}}
   if(!member){document.getElementById('loginError').textContent='Invalid PIN. Try again.';currentFamilyId=null;return;}currentUser=member.name;document.getElementById('loginError').textContent='';document.getElementById('pinStep').style.display='none';document.getElementById('welcomeName').textContent=member.name;document.getElementById('sosStep').style.display='block';}
 function enterChatFromLogin(){enterChat();}
 
-async function enterChat(){await loadFamily();await loadMembers();await loadRooms();document.getElementById('headerUser').textContent=currentUser;document.getElementById('headerRoomName').textContent=(currentFamily?.family_name?currentFamily.family_name+' Family':'Family Chat');showScreen('chatScreen');resetInactivityTimer();lockHistory();await loadEmergencyInfo();await loadMessages();subscribeRealtime();startCountdown();startHeartbeat();logEvent('login');}
+async function enterChat(){await loadFamily();await loadMembers();await loadRooms();document.getElementById('headerUser').textContent=currentUser;const gType=currentFamily?.group_type||'family';const suffix=GROUP_LABELS[gType]?GROUP_LABELS[gType].suffix:'Family';document.getElementById('headerRoomName').textContent=(currentFamily?.family_name?currentFamily.family_name+' '+suffix:suffix+' Chat');document.getElementById('expiryBanner').style.display=(gType!=='family'&&!currentFamily?.is_premium)?'flex':'none';showScreen('chatScreen');resetInactivityTimer();lockHistory();await loadEmergencyInfo();await loadMessages();subscribeRealtime();startCountdown();startHeartbeat();logEvent('login');}
 
 function doLogout(){currentUser=null;currentRoom=null;stopInactivityTimer();stopCountdown();stopHeartbeat();if(realtimeSub){sb.removeChannel(realtimeSub);realtimeSub=null;}document.getElementById('codeInput').value='';document.getElementById('loginBtn').disabled=true;resetLogin();showScreen('goodbyeScreen');}
 function lockHistory(){history.pushState({page:'chat'},'');history.pushState({page:'chat'},'');}window.addEventListener('popstate',()=>{history.pushState({page:currentUser?'chat':'goodbye'},'');});
