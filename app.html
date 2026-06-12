@@ -113,9 +113,9 @@
     </div>
     <div id="pinStep">
       <div class="field-label">Family ID</div>
-      <input type="text" id="familyIdInput" class="input" placeholder="Enter Family ID" autocomplete="off" style="text-transform:uppercase;letter-spacing:1px;" oninput="checkLoginReady()">
+      <input type="text" id="familyIdInput" class="input" placeholder="Family ID" autocomplete="off" style="text-transform:uppercase;letter-spacing:1px;" oninput="checkLoginReady()">
       <div class="field-label">6-Digit PIN</div>
-      <input type="password" id="codeInput" class="input" placeholder="6-digit PIN" autocomplete="off" maxlength="6" inputmode="numeric" pattern="\d{4,6}" oninput="this.value=this.value.replace(/\D/g,'');checkLoginReady()">
+      <input type="password" id="codeInput" class="input" placeholder="6-digit PIN" autocomplete="off" maxlength="6" inputmode="numeric" pattern="\d{6}" oninput="this.value=this.value.replace(/\D/g,'');checkLoginReady()">
       <button class="btn-primary" id="loginBtn" disabled onclick="doLogin()">Enter Family Chat</button>
       <div class="error-msg" id="loginError"></div>
       <div class="mini-note">Use the Family ID from your admin and your 6-digit PIN. Chat can be cleared by admins, but pinned emergency information stays safe.</div>
@@ -141,11 +141,11 @@
         <button type="button" class="type-chip" id="type-team" onclick="setGroupType('team')">🦺 Team</button>
       </div>
       <div class="field-label" id="regNameLabel">Family Name</div>
-      <input type="text" id="regFamilyName" class="input" placeholder="e.g. Pich" oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'');updateFamIdPreview();checkRegReady()">
+      <input type="text" id="regFamilyName" class="input" placeholder="Family name" oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'');updateFamIdPreview();checkRegReady()">
       <div class="field-label">Choose 4 digits</div>
       <div style="display:flex;gap:8px;align-items:center;">
         <input type="password" id="regFamDigits" class="input" placeholder="1234" maxlength="4" inputmode="numeric" style="width:105px;text-align:center;letter-spacing:4px;font-size:18px;" oninput="updateFamIdPreview();checkRegReady()">
-        <div style="flex:1;background:var(--surface2);border-radius:12px;padding:12px 14px;font-size:14px;font-weight:800;color:var(--teal);letter-spacing:2px;" id="famIdPreview">Your ID will appear here</div>
+        <div style="flex:1;background:var(--surface2);border-radius:12px;padding:12px 14px;font-size:14px;font-weight:800;color:var(--teal);letter-spacing:2px;" id="famIdPreview">NAME____</div>
       </div>
       <div class="field-label">Your Name</div>
       <input type="text" id="regAdminName" class="input" placeholder="Your name" oninput="checkRegReady()">
@@ -230,13 +230,11 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { global:{ headers:
 let currentUser=null,currentFamilyId=null,currentFamily=null,currentRoom=null;
 let rooms=[],members=[],emergencyInfo=[],realtimeSub=null,lastDate=null,heartbeatInterval=null,countdownInterval=null,secondsLeft=180,inactivityTimer=null;
 let optimisticIds = new Set();
-const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_MS = 5 * 60 * 1000;
 let regGroupType='family';
 const GROUP_LABELS={
-  family:{nameLabel:'Family Name',namePh:'e.g. Pich',create:'Create Family',done:'Family Created',share:'Share this Family ID with your members:',suffix:'Family'},
-  friends:{nameLabel:'Group Name',namePh:'e.g. BkkTrip',create:'Create Group',done:'Group Created',share:'Share this Group ID with your friends:',suffix:'Crew'},
-  team:{nameLabel:'Team Name',namePh:'e.g. TourA',create:'Create Team',done:'Team Created',share:'Share this Team ID with your members:',suffix:'Team'}
+  family:{nameLabel:'Family Name',namePh:'Family name',create:'Create Family',done:'Family Created',share:'Share this Family ID with your members:',suffix:'Family'},
+  friends:{nameLabel:'Group Name',namePh:'Group name',create:'Create Group',done:'Group Created',share:'Share this Group ID with your friends:',suffix:'Crew'},
+  team:{nameLabel:'Team Name',namePh:'Team name',create:'Create Team',done:'Team Created',share:'Share this Team ID with your members:',suffix:'Team'}
 };
 function setGroupType(t){regGroupType=t;['family','friends','team'].forEach(x=>document.getElementById('type-'+x).classList.toggle('active',x===t));const L=GROUP_LABELS[t];document.getElementById('regNameLabel').textContent=L.nameLabel;document.getElementById('regFamilyName').placeholder=L.namePh;const btn=document.getElementById('regBtn');if(btn.textContent!=='Creating...')btn.textContent=L.create;}
 
@@ -245,88 +243,33 @@ function isAdmin(){return !!members.find(m=>m.name===currentUser)?.is_admin;}
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
-function getDeviceId(){
-  let id=localStorage.getItem('sosfam_device_id');
-  if(!id){id=(crypto.randomUUID?crypto.randomUUID():('dev_'+Date.now()+'_'+Math.random().toString(36).slice(2)));localStorage.setItem('sosfam_device_id',id);}
-  return id;
-}
-function loginAttemptKey(familyId){return 'sosfam_login_'+familyId.toUpperCase()+'_'+getDeviceId();}
-function getLoginAttemptState(familyId){
-  try{return JSON.parse(localStorage.getItem(loginAttemptKey(familyId))||'{"attempts":0,"blockedUntil":0}');}
-  catch(e){return {attempts:0,blockedUntil:0};}
-}
-function setLoginAttemptState(familyId,state){localStorage.setItem(loginAttemptKey(familyId),JSON.stringify(state));}
-function isLoginLocked(familyId){
-  if(!familyId)return false;
-  const state=getLoginAttemptState(familyId);
-  return state.blockedUntil&&Date.now()<state.blockedUntil;
-}
-function getLockoutRemaining(familyId){
-  const state=getLoginAttemptState(familyId);
-  return Math.max(0,Math.ceil(((state.blockedUntil||0)-Date.now())/1000));
-}
-function recordFailedLogin(familyId){
-  const state=getLoginAttemptState(familyId);
-  const attempts=(state.attempts||0)+1;
-  if(attempts>=MAX_LOGIN_ATTEMPTS){
-    setLoginAttemptState(familyId,{attempts:MAX_LOGIN_ATTEMPTS,blockedUntil:Date.now()+LOCKOUT_MS});
-    return {locked:true,remaining:0};
-  }
-  setLoginAttemptState(familyId,{attempts,blockedUntil:0});
-  return {locked:false,remaining:MAX_LOGIN_ATTEMPTS-attempts};
-}
-function resetFailedLogins(familyId){if(familyId)localStorage.removeItem(loginAttemptKey(familyId));}
-function showLockoutMessage(familyId){
-  const secs=getLockoutRemaining(familyId),m=Math.floor(secs/60),s=String(secs%60).padStart(2,'0');
-  document.getElementById('loginError').textContent=`Too many wrong PIN attempts. Try again in ${m}:${s}.`;
-}
-
-function checkLoginReady(){const pin=document.getElementById('codeInput').value.trim();const fam=document.getElementById('familyIdInput').value.trim();document.getElementById('loginBtn').disabled=pin.length<4||pin.length>6||fam.length<4||isLoginLocked(fam);}
+const LOGIN_MAX_ATTEMPTS=5;
+const LOGIN_LOCK_MS=5*60*1000;
+function loginAttemptKey(fam){return 'sosfam_login_'+String(fam||'').toUpperCase();}
+function getLoginAttemptState(fam){try{return JSON.parse(localStorage.getItem(loginAttemptKey(fam)))||{attempts:0,blockedUntil:0};}catch(e){return{attempts:0,blockedUntil:0};}}
+function setLoginAttemptState(fam,state){localStorage.setItem(loginAttemptKey(fam),JSON.stringify(state));}
+function clearLoginAttempts(fam){localStorage.removeItem(loginAttemptKey(fam));}
+function isLoginLocked(fam){const st=getLoginAttemptState(fam);return st.blockedUntil&&Date.now()<st.blockedUntil;}
+function lockoutText(fam){const st=getLoginAttemptState(fam);const sec=Math.max(1,Math.ceil((st.blockedUntil-Date.now())/1000));const min=Math.ceil(sec/60);return 'Too many wrong PIN attempts. Try again in '+min+' minute'+(min>1?'s':'')+'.';}
+function showLockoutMessage(fam){document.getElementById('loginError').textContent=lockoutText(fam);}
+function recordFailedLogin(fam){const st=getLoginAttemptState(fam);const attempts=(st.attempts||0)+1;if(attempts>=LOGIN_MAX_ATTEMPTS){setLoginAttemptState(fam,{attempts:LOGIN_MAX_ATTEMPTS,blockedUntil:Date.now()+LOGIN_LOCK_MS});return{locked:true,remaining:0};}setLoginAttemptState(fam,{attempts,blockedUntil:0});return{locked:false,remaining:LOGIN_MAX_ATTEMPTS-attempts};}
+function checkLoginReady(){const pin=document.getElementById('codeInput').value.trim();const fam=document.getElementById('familyIdInput').value.trim().toUpperCase();const locked=fam.length>=4&&isLoginLocked(fam);document.getElementById('loginBtn').disabled=pin.length!==6||fam.length<4||locked;if(locked)showLockoutMessage(fam);else if(document.getElementById('loginError').textContent.startsWith('Too many wrong PIN attempts'))document.getElementById('loginError').textContent='';}
 function checkRegReady(){const name=document.getElementById('regFamilyName').value.trim();const digits=document.getElementById('regFamDigits').value.trim();const admin=document.getElementById('regAdminName').value.trim();const pin=document.getElementById('regAdminPin').value.trim();document.getElementById('regBtn').disabled=name.length<2||digits.length!==4||admin.length<2||pin.length!==6;}
 function updateFamIdPreview(){const raw=document.getElementById('regFamilyName').value.trim();const name=raw.toUpperCase().replace(/[^A-Z]/g,'').slice(0,10);const digits=document.getElementById('regFamDigits').value.trim();document.getElementById('famIdPreview').textContent=name?(name+(digits.length===4?digits:'____')):'Your ID will appear here';checkRegReady();}
-function showRegister(){showScreen('registerScreen');} function showLogin(){showScreen('loginScreen');} function resetLogin(){document.getElementById('pinStep').style.display='block';document.getElementById('sosStep').style.display='none';}
+function showRegister(){showScreen('registerScreen');checkRegReady();} function showLogin(){showScreen('loginScreen');checkLoginReady();} function resetLogin(){document.getElementById('pinStep').style.display='block';document.getElementById('sosStep').style.display='none';checkLoginReady();}
 
 async function loadFamily(){if(!currentFamilyId)return;const {data}=await sb.from('fam_families').select('*').eq('family_id',currentFamilyId).single();currentFamily=data||null;}
 async function loadMembers(){let q=sb.from('fam_members').select('*').order('created_at');if(currentFamilyId)q=q.eq('family_id',currentFamilyId);const {data}=await q;members=data||[];}
 async function loadRooms(){const {data}=await sb.from('fam_rooms').select('*').eq('family_id',currentFamilyId).order('created_at');rooms=data||[];if(!rooms.length){const {data:inserted}=await sb.from('fam_rooms').insert([{name:'General',family_id:currentFamilyId}]).select();rooms=inserted||[];}currentRoom=rooms[0]||null;}
 
-async function doRegister(){const familyName=document.getElementById('regFamilyName').value.trim();const adminName=document.getElementById('regAdminName').value.trim();const adminPin=document.getElementById('regAdminPin').value.trim();const famName=familyName.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10);const famDigits=document.getElementById('regFamDigits').value.trim();const famId=famName+famDigits;const btn=document.getElementById('regBtn');if(!/^\d{6}$/.test(adminPin)){document.getElementById('regError').textContent='PIN must be exactly 6 digits.';return;}btn.disabled=true;btn.textContent='Creating...';
-  const {data:existing}=await sb.from('fam_families').select('family_id').eq('family_id',famId).single();if(existing){document.getElementById('regError').textContent=famId+' is already taken.';btn.disabled=false;btn.textContent=GROUP_LABELS[regGroupType].create;return;}
-  const {error:famErr}=await sb.from('fam_families').insert([{family_id:famId,family_name:familyName,group_type:regGroupType}]);if(famErr){document.getElementById('regError').textContent='Error creating group.';btn.disabled=false;btn.textContent=GROUP_LABELS[regGroupType].create;return;}
+async function doRegister(){const familyName=document.getElementById('regFamilyName').value.trim();const adminName=document.getElementById('regAdminName').value.trim();const adminPin=document.getElementById('regAdminPin').value.trim();const famName=familyName.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10);const famDigits=document.getElementById('regFamDigits').value.trim();const famId=famName+famDigits;const btn=document.getElementById('regBtn');const regErr=document.getElementById('regError');regErr.textContent='';if(!/^[A-Z]{2,10}$/.test(famName)){regErr.textContent='Enter a valid name using letters only.';return;}if(!/^\d{4}$/.test(famDigits)){regErr.textContent='Family ID digits must be exactly 4 digits.';return;}if(!/^\d{6}$/.test(adminPin)){regErr.textContent='PIN must be exactly 6 digits.';return;}btn.disabled=true;btn.textContent='Creating...';
+  const {data:existing}=await sb.from('fam_families').select('family_id').eq('family_id',famId).single();if(existing){regErr.textContent=famId+' is already taken.';btn.disabled=false;btn.textContent=GROUP_LABELS[regGroupType].create;return;}
+  const {error:famErr}=await sb.from('fam_families').insert([{family_id:famId,family_name:familyName,group_type:regGroupType}]);if(famErr){regErr.textContent='Error creating group: '+(famErr.message||'Please check Supabase rules.');btn.disabled=false;btn.textContent=GROUP_LABELS[regGroupType].create;return;}
   await sb.from('fam_members').insert([{name:adminName,pin:await hashPin(adminPin),is_admin:true,family_id:famId}]);await sb.from('fam_rooms').insert([{name:'General',family_id:famId}]);
   currentFamilyId=famId;currentUser=adminName;await loadFamily();await loadMembers();await loadRooms();document.getElementById('generatedFamilyId').textContent=famId;document.getElementById('regDoneTitle').textContent=GROUP_LABELS[regGroupType].done;document.getElementById('regDoneShare').textContent=GROUP_LABELS[regGroupType].share;document.getElementById('regStep1').style.display='none';document.getElementById('regStep2').style.display='block';}
 
-async function doLogin(){
-  const loginBtn=document.getElementById('loginBtn');
-  loginBtn.disabled=true;
-  const pin=document.getElementById('codeInput').value.trim();
-  const famId=document.getElementById('familyIdInput').value.trim().toUpperCase();
-  if(!/^\d{4,6}$/.test(pin)){document.getElementById('loginError').textContent='PIN must be 4–6 digits. New PINs must be 6 digits.';checkLoginReady();return;}
-  if(isLoginLocked(famId)){showLockoutMessage(famId);checkLoginReady();return;}
-  const {data:fam}=await sb.from('fam_families').select('*').eq('family_id',famId).single();
-  if(!fam){document.getElementById('loginError').textContent='Family ID not found.';checkLoginReady();return;}
-  currentFamilyId=famId;currentFamily=fam;await loadMembers();
-  const hashed=await hashPin(pin);
-  let member=members.find(m=>m.pin===hashed);
-  if(!member){
-    const plain=members.find(m=>m.pin===pin);
-    if(plain){await sb.from('fam_members').update({pin:hashed}).eq('id',plain.id);member=plain;}
-  }
-  if(!member){
-    const failed=recordFailedLogin(famId);
-    document.getElementById('loginError').textContent=failed.locked?'Too many wrong PIN attempts. Locked for 5 minutes.':`Invalid PIN. Attempts remaining: ${failed.remaining}`;
-    currentFamilyId=null;
-    checkLoginReady();
-    return;
-  }
-  resetFailedLogins(famId);
-  currentUser=member.name;
-  document.getElementById('loginError').textContent='';
-  if(pin.length<6){setTimeout(()=>showToast('Please ask admin to update this PIN to 6 digits.'),700);}
-  document.getElementById('pinStep').style.display='none';
-  document.getElementById('welcomeName').textContent=member.name;
-  document.getElementById('sosStep').style.display='block';
-}
+async function doLogin(){const pin=document.getElementById('codeInput').value.trim();const famId=document.getElementById('familyIdInput').value.trim().toUpperCase();const err=document.getElementById('loginError');if(!/^\d{6}$/.test(pin)){err.textContent='PIN must be exactly 6 digits.';return;}if(isLoginLocked(famId)){showLockoutMessage(famId);checkLoginReady();return;}const {data:fam}=await sb.from('fam_families').select('*').eq('family_id',famId).single();if(!fam){const r=recordFailedLogin(famId);err.textContent=r.locked?lockoutText(famId):'Family ID or PIN incorrect. Attempts remaining: '+r.remaining;checkLoginReady();return;}currentFamilyId=famId;currentFamily=fam;await loadMembers();const hashed=await hashPin(pin);let member=members.find(m=>m.pin===hashed);
+  if(!member){const r=recordFailedLogin(famId);err.textContent=r.locked?lockoutText(famId):'Family ID or PIN incorrect. Attempts remaining: '+r.remaining;currentFamilyId=null;checkLoginReady();return;}clearLoginAttempts(famId);currentUser=member.name;err.textContent='';document.getElementById('pinStep').style.display='none';document.getElementById('welcomeName').textContent=member.name;document.getElementById('sosStep').style.display='block';}
 function enterChatFromLogin(){enterChat();}
 
 async function enterChat(){await loadFamily();await loadMembers();await loadRooms();document.getElementById('headerUser').textContent=currentUser;const gType=currentFamily?.group_type||'family';const suffix=GROUP_LABELS[gType]?GROUP_LABELS[gType].suffix:'Family';document.getElementById('headerRoomName').textContent=(currentFamily?.family_name?currentFamily.family_name+' '+suffix:suffix+' Chat');document.getElementById('expiryBanner').style.display=(gType!=='family'&&!currentFamily?.is_premium)?'flex':'none';showScreen('chatScreen');resetInactivityTimer();lockHistory();await loadEmergencyInfo();await loadMessages();subscribeRealtime();startCountdown();startHeartbeat();logEvent('login');}
@@ -357,7 +300,7 @@ async function deleteEmergencyInfo(id){if(!confirm('Unpin this emergency informa
 function escapeHtml(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 
 function openAdmin(){renderAdminPanel();document.getElementById('adminPanel').classList.add('open');}function closeAdmin(){document.getElementById('adminPanel').classList.remove('open');}
-function renderAdminPanel(){const box=document.getElementById('adminOnlyContent');if(!isAdmin()){box.innerHTML='<div class="safe-note">Only admins can manage members, admins, PINs, and pinned emergency information.</div>';return;}box.innerHTML='<div class="section-head">Members & Admins</div><div id="membersList"></div><div class="add-row"><input class="input" id="newMemberInput" placeholder="Member name"><input class="input" id="newMemberPin" placeholder="6-digit PIN" maxlength="6" inputmode="numeric" pattern="\d{6}" style="max-width:118px" oninput="this.value=this.value.replace(/\D/g,'')"><button class="btn-add" onclick="addMember()">Add</button></div><div class="section-head">Emergency Information</div><button class="small-btn teal" style="width:100%;padding:12px;" onclick="closeAdmin();openInfo();">📌 Manage Pinned Information</button>';
+function renderAdminPanel(){const box=document.getElementById('adminOnlyContent');if(!isAdmin()){box.innerHTML='<div class="safe-note">Only admins can manage members, admins, PINs, and pinned emergency information.</div>';return;}box.innerHTML='<div class="section-head">Members & Admins</div><div id="membersList"></div><div class="add-row"><input class="input" id="newMemberInput" placeholder="Member name"><input class="input" id="newMemberPin" placeholder="PIN" maxlength="6" inputmode="numeric" style="max-width:92px"><button class="btn-add" onclick="addMember()">Add</button></div><div class="section-head">Emergency Information</div><button class="small-btn teal" style="width:100%;padding:12px;" onclick="closeAdmin();openInfo();">📌 Manage Pinned Information</button>';
  const ml=document.getElementById('membersList');members.forEach(m=>{const row=document.createElement('div');row.className='row';const main=document.createElement('div');main.className='row-main';main.innerHTML=`<div class="row-title">${escapeHtml(m.name)} ${m.name===currentUser?'(You)':''}</div><div class="row-sub">${m.last_seen?'Last seen '+formatRelative(m.last_seen):'Member'}</div>`;row.appendChild(main);const actions=document.createElement('div');actions.className='row-actions';if(m.is_admin){const tag=document.createElement('span');tag.className='tag';tag.textContent='ADMIN';actions.appendChild(tag);if(m.name!==currentUser){const demote=document.createElement('button');demote.className='small-btn';demote.textContent='Remove Admin';demote.onclick=()=>toggleAdmin(m.id,true);actions.appendChild(demote);}}else{const promote=document.createElement('button');promote.className='small-btn teal';promote.textContent='Make Admin';promote.onclick=()=>toggleAdmin(m.id,false);actions.appendChild(promote);}const pin=document.createElement('button');pin.className='small-btn';pin.textContent='PIN';pin.onclick=()=>updatePinPrompt(m.id,m.name);actions.appendChild(pin);if(m.name!==currentUser){const del=document.createElement('button');del.className='small-btn red';del.textContent='Remove';del.onclick=()=>deleteMember(m.id,m.name);actions.appendChild(del);}row.appendChild(actions);ml.appendChild(row);});}
 async function addMember(){const name=document.getElementById('newMemberInput').value.trim();const pin=document.getElementById('newMemberPin').value.trim();if(!name)return;if(!/^\d{6}$/.test(pin)){showToast('PIN must be exactly 6 digits');return;}const {error}=await sb.from('fam_members').insert({name,pin:await hashPin(pin),is_admin:false,family_id:currentFamilyId});if(error){showToast('Error adding member');return;}await loadMembers();renderAdminPanel();showToast(name+' added ✓');}
 async function toggleAdmin(id,currentStatus){const {error}=await sb.from('fam_members').update({is_admin:!currentStatus}).eq('id',id).eq('family_id',currentFamilyId);if(error){showToast('Error updating admin');return;}await loadMembers();renderAdminPanel();showToast('Admin updated ✓');}
