@@ -1,171 +1,432 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SOSFam Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Inter, sans-serif; background: #0D0A0A; color: #F5F5F5; padding: 24px; }
-    h1 { font-size: 24px; font-weight: 700; color: #FF3B3B; margin-bottom: 4px; }
-    .sub { font-size: 13px; color: #7A4A4A; margin-bottom: 24px; }
-    .live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #7A4A4A; }
-    .live-dot { width: 8px; height: 8px; background: #FF3B3B; border-radius: 50%; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-    
-    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .stat-card { background: #1A0F0F; border: 1px solid #2A1515; border-radius: 16px; padding: 20px; text-align: center; }
-    .stat-card .num { font-size: 42px; font-weight: 800; color: #FF3B3B; font-variant-numeric: tabular-nums; }
-    .stat-card .label { font-size: 11px; color: #7A4A4A; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Crack Network Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f1117;--surface:#1a1d27;--surface2:#222636;--border:#2d3148;--text:#f0f0ff;--muted:#8b8fad;--accent:#7c6fcd;--green:#22c98a;--orange:#f59e0b;--red:#f0544f;}
+body.light{--bg:#f0f2f8;--surface:#ffffff;--surface2:#f4f6ff;--border:#e0e4f0;--text:#1a1d2e;--muted:#6b7080;--accent:#7c6fcd;}
+.theme-toggle{background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent);}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:24px 16px;}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;max-width:1000px;margin-left:auto;margin-right:auto;}
+.logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text);}
+.logo span{color:var(--accent);}
+.last-update{font-size:12px;color:var(--muted);}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:5px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.main{max-width:1000px;margin:0 auto;}
+/* SITE CARDS */
+.sites-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px;}
+@media(max-width:1000px){.sites-grid{grid-template-columns:repeat(3,1fr);}}@media(max-width:760px){.sites-grid{grid-template-columns:repeat(2,1fr);}}@media(max-width:500px){.sites-grid{grid-template-columns:1fr;}}
+.site-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;}
+.site-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.site-name{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--text);}
+.site-url{font-size:11px;color:var(--muted);margin-top:2px;}
+.live-badge{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--green);background:rgba(34,201,138,.1);padding:3px 8px;border-radius:8px;}
+.stat-big{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:var(--text);line-height:1;}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px;margin-bottom:16px;}
+.stat-row{display:flex;gap:12px;}
+.stat-mini{flex:1;background:var(--surface2);border-radius:8px;padding:10px;}
+.stat-mini-val{font-size:16px;font-weight:700;color:var(--accent);}
+.stat-mini-lbl{font-size:10px;color:var(--muted);margin-top:2px;}
+/* CHART */
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:24px;}
+.chart-title{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px;}
+.chart-wrap{display:flex;align-items:flex-end;gap:4px;height:80px;}
+.chart-bar-group{flex:1;display:flex;gap:2px;align-items:flex-end;}
+.chart-bar{flex:1;border-radius:3px 3px 0 0;min-height:2px;transition:height .5s ease;}
+.chart-labels{display:flex;gap:4px;margin-top:6px;}
+.chart-label{flex:1;text-align:center;font-size:9px;color:var(--muted);}
+/* TOTAL */
+.total-card{background:linear-gradient(135deg,#1e1b4b,#1a2550);border:1px solid var(--border);border-radius:14px;padding:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;text-align:center;}
+body.light .total-card{background:linear-gradient(135deg,#534AB7,#7c6fcd);}
+body.light .total-val{color:#fff;}
+body.light .total-lbl{color:rgba(255,255,255,.8);}
+.total-val{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#fff;}
+.total-lbl{font-size:11px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.08em;margin-top:4px;}
+.loading{color:var(--muted);font-size:13px;}
 
-    .section { background: #1A0F0F; border: 1px solid #2A1515; border-radius: 16px; padding: 20px; margin-bottom: 16px; }
-    .section h2 { font-size: 14px; font-weight: 600; color: #7A4A4A; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
-    
-    .family-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2A1515; }
-    .family-row:last-child { border-bottom: none; }
-    .family-id { font-size: 14px; font-weight: 600; color: #FF3B3B; letter-spacing: 1px; }
-    .family-name { font-size: 12px; color: #7A4A4A; }
-    .family-meta { font-size: 12px; color: #7A4A4A; text-align: right; }
-    
-    .event-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #2A1515; }
-    .event-row:last-child { border-bottom: none; }
-    .event-badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; }
-    .event-badge.login { background: rgba(0,201,167,0.15); color: #00C9A7; }
-    .event-badge.logout { background: rgba(122,74,74,0.3); color: #7A4A4A; }
-    .event-badge.sos { background: rgba(255,59,59,0.2); color: #FF3B3B; }
-    .event-meta { font-size: 12px; color: #7A4A4A; flex: 1; }
-    .event-time { font-size: 11px; color: #3A2020; }
+/* PIN LOCK */
+.lock-screen{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0f1117,#1e1b4b);display:flex;align-items:center;justify-content:center;padding:20px;}
+.lock-box{width:100%;max-width:380px;background:rgba(26,29,39,.96);border:1px solid var(--border);border-radius:20px;padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.35);text-align:center;}
+.lock-logo{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:6px;color:#fff;}
+.lock-logo span{color:var(--accent);}
+.lock-sub{font-size:13px;color:var(--muted);margin-bottom:22px;}
+.lock-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;color:var(--text);font-size:22px;text-align:center;letter-spacing:6px;outline:none;margin-bottom:14px;}
+.lock-input:focus{border-color:var(--accent);}
+.lock-btn{width:100%;border:0;border-radius:14px;background:var(--accent);color:#fff;font-weight:800;padding:14px;font-size:15px;cursor:pointer;}
+.lock-error{min-height:18px;color:var(--red);font-size:12px;margin-top:12px;}
+.lock-note{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.4;}
+body.locked .header,body.locked .main{filter:blur(8px);pointer-events:none;user-select:none;}
 
-    .refresh-btn { background: #FF3B3B; color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
-    .header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
-    .loading { color: #7A4A4A; font-size: 13px; }
-  </style>
+</style>
 </head>
-<body>
+<body class="locked">
+<div class="lock-screen" id="lock-screen">
+  <div class="lock-box">
+    <div class="lock-logo">Crack <span>Network</span></div>
+    <div class="lock-sub">Private Dashboard Access</div>
+    <input id="dash-pin" class="lock-input" type="password" maxlength="6" inputmode="numeric" placeholder="••••••" autocomplete="off" onkeydown="if(event.key==='Enter')unlockDashboard()">
+    <button class="lock-btn" onclick="unlockDashboard()">Unlock Dashboard</button>
+    <div class="lock-error" id="lock-error"></div>
+    <div class="lock-note">This hides the dashboard from casual visitors. For stronger protection, also enable Netlify password protection or basic auth.</div>
+  </div>
+</div>
 
-<div class="header-row">
+<div class="header">
   <div>
-    <h1>🆘 SOSFam Dashboard</h1>
-    <div class="sub">Private Admin View · <span class="live"><span class="live-dot"></span> Live · updates every 30s · <span id="clock"></span></span></div>
+    <div class="logo">Crack <span>Network</span></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:2px;">Private Dashboard</div>
   </div>
-  <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+  <div style="display:flex;align-items:center;gap:12px;"><button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">☀️ Light</button><div class="last-update"><span class="dot"></span>Live · updates every 60s · <span id="last-updated">loading...</span></div></div>
 </div>
 
-<div class="stats-row">
-  <div class="stat-card">
-    <div class="num" id="stat_families">—</div>
-    <div class="label">Total Families</div>
+<div class="main">
+  <!-- TOTAL ROW -->
+  <div class="total-card" style="margin-bottom:24px;">
+    <div><div class="total-val" id="total-live">—</div><div class="total-lbl">Total online now</div></div>
+    <div><div class="total-val" id="total-today">—</div><div class="total-lbl">Total today</div></div>
+    <div><div class="total-val" id="total-week">—</div><div class="total-lbl">This week</div></div>
   </div>
-  <div class="stat-card">
-    <div class="num" id="stat_members">—</div>
-    <div class="label">Total Members</div>
-  </div>
-  <div class="stat-card">
-    <div class="num" id="stat_online">—</div>
-    <div class="label">Online Now</div>
-  </div>
-  <div class="stat-card">
-    <div class="num" id="stat_sos">—</div>
-    <div class="label">SOS Today</div>
-  </div>
-  <div class="stat-card">
-    <div class="num" id="stat_logins">—</div>
-    <div class="label">Logins Today</div>
-  </div>
-</div>
 
-<div class="section">
-  <h2>Registered Families</h2>
-  <div id="families_list"><div class="loading">Loading...</div></div>
-</div>
+  <!-- SITE CARDS -->
+  <div class="sites-grid">
+    <div class="site-card" id="card-wc">
+      <div class="site-card-header">
+        <div><div class="site-name">WordCrack</div><div class="site-url">wordcrack.pro</div></div>
+        <div class="live-badge"><span class="dot"></span><span id="wc-live">—</span></div>
+      </div>
+      <div class="stat-big" id="wc-today">—</div>
+      <div class="stat-label">visits today</div>
+      <div class="stat-row">
+        <div class="stat-mini"><div class="stat-mini-val" id="wc-week">—</div><div class="stat-mini-lbl">This week</div></div>
+        <div class="stat-mini"><div class="stat-mini-val" id="wc-total">—</div><div class="stat-mini-lbl">All time</div></div>
+      </div>
+    </div>
 
-<div class="section">
-  <h2>Recent Events (last 50)</h2>
-  <div id="events_list"><div class="loading">Loading...</div></div>
+    <div class="site-card" id="card-lc">
+      <div class="site-card-header">
+        <div><div class="site-name">LoanCrack</div><div class="site-url">loancrack.pro</div></div>
+        <div class="live-badge"><span class="dot"></span><span id="lc-live">—</span></div>
+      </div>
+      <div class="stat-big" id="lc-today">—</div>
+      <div class="stat-label">visits today</div>
+      <div class="stat-row">
+        <div class="stat-mini"><div class="stat-mini-val" id="lc-week">—</div><div class="stat-mini-lbl">This week</div></div>
+        <div class="stat-mini"><div class="stat-mini-val" id="lc-total">—</div><div class="stat-mini-lbl">All time</div></div>
+      </div>
+    </div>
+
+    <div class="site-card" id="card-ic">
+      <div class="site-card-header">
+        <div><div class="site-name">InsuranceCrack</div><div class="site-url">insurancecrack.pro</div></div>
+        <div class="live-badge"><span class="dot"></span><span id="ic-live">—</span></div>
+      </div>
+      <div class="stat-big" id="ic-today">—</div>
+      <div class="stat-label">visits today</div>
+      <div class="stat-row">
+        <div class="stat-mini"><div class="stat-mini-val" id="ic-week">—</div><div class="stat-mini-lbl">This week</div></div>
+        <div class="stat-mini"><div class="stat-mini-val" id="ic-total">—</div><div class="stat-mini-lbl">All time</div></div>
+      </div>
+    </div>
+  <div class="site-card" id="card-dc">
+      <div class="site-card-header">
+        <div><div class="site-name">DebtCrack</div><div class="site-url">debtcrack.pro</div></div>
+        <div class="live-badge"><span class="dot"></span><span id="dc-live">—</span></div>
+      </div>
+      <div class="stat-big" id="dc-today">—</div>
+      <div class="stat-label">visits today</div>
+      <div class="stat-row">
+        <div class="stat-mini"><div class="stat-mini-val" id="dc-week">—</div><div class="stat-mini-lbl">This week</div></div>
+        <div class="stat-mini"><div class="stat-mini-val" id="dc-total">—</div><div class="stat-mini-lbl">All time</div></div>
+      </div>
+    </div>
+
+    <div class="site-card" id="card-gc">
+      <div class="site-card-header">
+        <div><div class="site-name">GLP1Crack</div><div class="site-url">glp1crack.pro</div></div>
+        <div class="live-badge"><span class="dot"></span><span id="gc-live">—</span></div>
+      </div>
+      <div class="stat-big" id="gc-today">—</div>
+      <div class="stat-label">visits today</div>
+      <div class="stat-row">
+        <div class="stat-mini"><div class="stat-mini-val" id="gc-week">—</div><div class="stat-mini-lbl">This week</div></div>
+        <div class="stat-mini"><div class="stat-mini-val" id="gc-total">—</div><div class="stat-mini-lbl">All time</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOSFAM SECTION -->
+  <div style="margin-bottom:24px;">
+    <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--text);margin-bottom:14px;">
+      🆘 SOSFam <span style="font-size:12px;font-weight:500;color:var(--muted);font-family:'DM Sans',sans-serif;">sosfam.netlify.app</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+      <div class="site-card">
+        <div class="stat-label" style="margin-bottom:6px;">Families</div>
+        <div class="stat-big" id="sf-families">—</div>
+      </div>
+      <div class="site-card">
+        <div class="stat-label" style="margin-bottom:6px;">Members</div>
+        <div class="stat-big" id="sf-members">—</div>
+      </div>
+      <div class="site-card">
+        <div class="stat-label" style="margin-bottom:6px;">Online now</div>
+        <div class="stat-big" style="color:#22c98a;" id="sf-online">—</div>
+      </div>
+      <div class="site-card">
+        <div class="stat-label" style="margin-bottom:6px;">SOS today</div>
+        <div class="stat-big" style="color:#f0544f;" id="sf-sos">—</div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:12px;">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Recent events</div>
+      <div id="sf-events" style="font-size:13px;color:var(--muted);">Loading...</div>
+    </div>
+  </div>
+
+  <!-- 7 DAY CHART -->
+  <div class="chart-card">
+    <div class="chart-title">7-day visits by site</div>
+    <div class="chart-wrap" id="chart-wrap">
+      <div class="loading">Loading chart...</div>
+    </div>
+    <div class="chart-labels" id="chart-labels"></div>
+    <div style="display:flex;gap:16px;margin-top:10px;">
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:#7c6fcd"></div>WordCrack</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:#22c98a"></div>LoanCrack</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:#f59e0b"></div>InsuranceCrack</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:#f0544f"></div>DebtCrack</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:#06b6d4"></div>GLP1Crack</div>
+    </div>
+  </div>
 </div>
 
 <script>
-const SUPABASE_URL = 'https://mjnigheggxtythytsqle.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qbmlnaGVnZ3h0eXRoeXRzcWxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzYwMDcsImV4cCI6MjA5NTY1MjAwN30.mh1psePuKeQ8SH5uita7BsUKd6wd5IwHVVlDmJCMA0Q';
-const APP_TOKEN = 'afc5da2bce3e7e74797ed1bd8c513265bbdd12de5d09469019bda4927dd1e71d';
+// Simple private dashboard PIN gate. Change this PIN before uploading.
+var DASHBOARD_PIN = '739204';
+var DASH_UNLOCK_KEY = 'crack_dash_unlocked_v1';
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  global: { headers: { 'x-app-token': APP_TOKEN } }
-});
-
-function formatTime(ts) {
-  if (!ts) return '—';
-  const d = new Date(ts);
-  return d.toLocaleString('en-GB', { timeZone: 'Asia/Bangkok', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+function unlockDashboard(){
+  var input=document.getElementById('dash-pin');
+  var err=document.getElementById('lock-error');
+  if(!input)return;
+  if(input.value.trim()===DASHBOARD_PIN){
+    try{sessionStorage.setItem(DASH_UNLOCK_KEY,'yes');}catch(e){}
+    document.body.classList.remove('locked');
+    var lock=document.getElementById('lock-screen');
+    if(lock)lock.style.display='none';
+  }else{
+    err.textContent='Wrong PIN. Try again.';
+    input.value='';
+    input.focus();
+  }
 }
 
-function isOnline(last_seen) {
-  if (!last_seen) return false;
-  return new Date(Date.now() - 60000) < new Date(last_seen);
+function checkDashboardLock(){
+  var ok=false;
+  try{ok=sessionStorage.getItem(DASH_UNLOCK_KEY)==='yes';}catch(e){}
+  if(ok){
+    document.body.classList.remove('locked');
+    var lock=document.getElementById('lock-screen');
+    if(lock)lock.style.display='none';
+  }else{
+    setTimeout(function(){var input=document.getElementById('dash-pin');if(input)input.focus();},100);
+  }
 }
+checkDashboardLock();
 
-async function loadAll() {
-  // Families
-  const { data: families } = await sb.from('fam_families').select('*').order('created_at', { ascending: false });
-  document.getElementById('stat_families').textContent = families?.length || 0;
+var SUPA_URL='https://mjnigheggxtythytsqle.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qbmlnaGVnZ3h0eXRoeXRzcWxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzYwMDcsImV4cCI6MjA5NTY1MjAwN30.mh1psePuKeQ8SH5uita7BsUKd6wd5IwHVVlDmJCMA0Q';
 
-  const fl = document.getElementById('families_list');
-  fl.innerHTML = '';
-  (families || []).forEach(f => {
-    const row = document.createElement('div');
-    row.className = 'family-row';
-    row.innerHTML = `
-      <div>
-        <div class="family-id">${f.family_id}</div>
-        <div class="family-name">${f.family_name || '—'} ${f.is_premium ? '⭐' : ''}</div>
-      </div>
-      <div class="family-meta">
-        ${formatTime(f.created_at)}<br>
-        ${f.is_premium ? '<span style="color:#FF9F43;">Premium</span>' : 'Free'}
-      </div>
-    `;
-    fl.appendChild(row);
-  });
-
-  // Members
-  const { data: members } = await sb.from('fam_members').select('*');
-  document.getElementById('stat_members').textContent = members?.length || 0;
-  const online = (members || []).filter(m => isOnline(m.last_seen));
-  document.getElementById('stat_online').textContent = online.length;
-
-  // Stats
-  const today = new Date().toISOString().split('T')[0];
-  const { data: stats } = await sb.from('sosfam_stats').select('*').gte('created_at', today).order('created_at', { ascending: false }).limit(50);
-  
-  const sos = (stats || []).filter(s => s.event === 'sos');
-  const logins = (stats || []).filter(s => s.event === 'login');
-  document.getElementById('stat_sos').textContent = sos.length;
-  document.getElementById('stat_logins').textContent = logins.length;
-
-  // All events
-  const { data: allEvents } = await sb.from('sosfam_stats').select('*').order('created_at', { ascending: false }).limit(50);
-  const el = document.getElementById('events_list');
-  el.innerHTML = '';
-  (allEvents || []).forEach(e => {
-    const row = document.createElement('div');
-    row.className = 'event-row';
-    row.innerHTML = `
-      <span class="event-badge ${e.event}">${e.event.toUpperCase()}</span>
-      <span class="event-meta">${e.member_name || '—'} · ${e.family_id || '—'}</span>
-      <span class="event-time">${formatTime(e.created_at)}</span>
-    `;
-    el.appendChild(row);
+function sf(path){
+  return fetch(SUPA_URL+'/rest/v1/'+path,{
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+  }).then(function(r){return r.json();});
+}
+function sfCount(path){
+  return fetch(SUPA_URL+'/rest/v1/'+path,{
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Prefer':'count=exact','Range-Unit':'items','Range':'0-0'}
+  }).then(function(r){
+    var c=r.headers.get('content-range');
+    return c?parseInt(c.split('/')[1])||0:0;
   });
 }
 
-// Clock
-setInterval(() => {
-  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Bangkok' });
-}, 1000);
+function getISO(minsAgo){return new Date(Date.now()-minsAgo*60*1000).toISOString();}
+function getISODaysAgo(days){
+  var d=new Date();d.setHours(0,0,0,0);
+  d.setDate(d.getDate()-days);
+  return d.toISOString();
+}
+
+var SITES=[
+  {table:'wordcrack_visits', live:'wc-live', today:'wc-today', week:'wc-week', total:'wc-total', color:'#7c6fcd'},
+  {table:'loancrack_visits', live:'lc-live', today:'lc-today', week:'lc-week', total:'lc-total', color:'#22c98a'},
+  {table:'insurancecrack_visits', live:'ic-live', today:'ic-today', week:'ic-week', total:'ic-total', color:'#f59e0b'},
+  {table:'debtcrack_visits', live:'dc-live', today:'dc-today', week:'dc-week', total:'dc-total', color:'#f0544f'},
+  {table:'glp1crack_visits', live:'gc-live', today:'gc-today', week:'gc-week', total:'gc-total', color:'#06b6d4'},
+];
+
+var chartData=[[],[],[],[],[]];
+
+function loadAll(){
+  var totalLive=0,totalToday=0,totalWeek=0;
+  var promises=SITES.map(function(s,i){
+    return Promise.all([
+      sfCount(s.table+'?created_at=gte.'+getISO(5)+'&select=id'),
+      sfCount(s.table+'?created_at=gte.'+getISODaysAgo(0)+'&select=id'),
+      sfCount(s.table+'?created_at=gte.'+getISODaysAgo(7)+'&select=id'),
+      sfCount(s.table+'?select=id'),
+    ]).then(function(d){
+      document.getElementById(s.live).textContent=d[0];
+      document.getElementById(s.today).textContent=d[1].toLocaleString();
+      document.getElementById(s.week).textContent=d[2].toLocaleString();
+      document.getElementById(s.total).textContent=d[3].toLocaleString();
+      totalLive+=d[0];totalToday+=d[1];totalWeek+=d[2];
+    });
+  });
+
+  Promise.all(promises).then(function(){
+    document.getElementById('total-live').textContent=totalLive;
+    document.getElementById('total-today').textContent=totalToday.toLocaleString();
+    document.getElementById('total-week').textContent=totalWeek.toLocaleString();
+    document.getElementById('last-updated').textContent=new Date().toLocaleTimeString();
+  });
+
+  // Load 7-day chart
+  load7DayChart();
+}
+
+function load7DayChart(){
+  var days=[];
+  for(var i=6;i>=0;i--){
+    var d=new Date();d.setDate(d.getDate()-i);
+    days.push(d);
+  }
+  var promises=SITES.map(function(s,si){
+    return Promise.all(days.map(function(d){
+      var start=new Date(d);start.setHours(0,0,0,0);
+      var end=new Date(d);end.setHours(23,59,59,999);
+      return sfCount(s.table+'?created_at=gte.'+start.toISOString()+'&created_at=lte.'+end.toISOString()+'&select=id');
+    })).then(function(counts){chartData[si]=counts;});
+  });
+
+  Promise.all(promises).then(function(){
+    renderChart(days);
+  });
+}
+
+function renderChart(days){
+  var allVals=[].concat(chartData[0],chartData[1],chartData[2],chartData[3],chartData[4]);
+  var maxVal=Math.max.apply(null,allVals)||1;
+  var wrap=document.getElementById('chart-wrap');
+  var labels=document.getElementById('chart-labels');
+  wrap.innerHTML='';labels.innerHTML='';
+  var dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  days.forEach(function(d,i){
+    var group=document.createElement('div');
+    group.className='chart-bar-group';
+    SITES.forEach(function(s,si){
+      var bar=document.createElement('div');
+      bar.className='chart-bar';
+      var h=Math.round((chartData[si][i]/maxVal)*76)+4;
+      bar.style.height=h+'px';
+      bar.style.background=s.color;
+      bar.title=s.table.replace('_visits','')+': '+chartData[si][i];
+      group.appendChild(bar);
+    });
+    wrap.appendChild(group);
+    var lbl=document.createElement('div');
+    lbl.className='chart-label';
+    lbl.textContent=dayNames[d.getDay()];
+    labels.appendChild(lbl);
+  });
+}
 
 loadAll();
-setInterval(loadAll, 30000);
+loadSOSFam();
+
+var SF_TOKEN = 'afc5da2bce3e7e74797ed1bd8c513265bbdd12de5d09469019bda4927dd1e71d';
+
+function sfSos(path) {
+  return fetch(SUPA_URL+'/rest/v1/'+path, {
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer '+SUPA_KEY,
+      'x-app-token': SF_TOKEN,
+      'Prefer': 'count=exact',
+      'Range-Unit': 'items',
+      'Range': '0-0'
+    }
+  }).then(function(r) {
+    var c = r.headers.get('content-range');
+    if (c && c.indexOf('/') > -1) {
+      var total = c.split('/')[1];
+      return total === '*' ? 0 : parseInt(total) || 0;
+    }
+    return 0;
+  });
+}
+
+function sfSosGet(path) {
+  return fetch(SUPA_URL+'/rest/v1/'+path, {
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer '+SUPA_KEY,
+      'x-app-token': SF_TOKEN
+    }
+  }).then(function(r) { return r.json(); });
+}
+
+function loadSOSFam() {
+  var today = new Date(); today.setHours(0,0,0,0);
+  var oneMinAgo = new Date(Date.now() - 60000).toISOString();
+
+  Promise.all([
+    sfSos('fam_families?select=id'),
+    sfSos('fam_members?select=id'),
+    sfSos('fam_members?last_seen=gte.'+oneMinAgo+'&select=id'),
+    sfSos('sosfam_stats?event=eq.sos&created_at=gte.'+today.toISOString()+'&select=id'),
+    sfSosGet('sosfam_stats?select=event,member_name,family_id,created_at&order=created_at.desc&limit=5')
+  ]).then(function(d) {
+    document.getElementById('sf-families').textContent = d[0];
+    document.getElementById('sf-members').textContent = d[1];
+    document.getElementById('sf-online').textContent = d[2];
+    document.getElementById('sf-sos').textContent = d[3];
+
+    var events = d[4];
+    var el = document.getElementById('sf-events');
+    if (!events || !events.length) { el.textContent = 'No recent events'; return; }
+    el.innerHTML = events.map(function(e) {
+      var badge = e.event === 'sos' ? 'background:#f0544f;color:white;' :
+                  e.event === 'login' ? 'background:rgba(34,201,138,.15);color:#22c98a;' :
+                  'background:var(--surface2);color:var(--muted);';
+      var t = new Date(e.created_at).toLocaleTimeString('en-GB', {timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit'});
+      return '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--border);">' +
+        '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;'+badge+'">'+e.event.toUpperCase()+'</span>' +
+        '<span style="flex:1;color:var(--text);">'+(e.member_name||'—')+' · '+(e.family_id||'—')+'</span>' +
+        '<span style="font-size:11px;color:var(--muted);">'+t+'</span>' +
+        '</div>';
+    }).join('');
+  }).catch(function() {
+    document.getElementById('sf-events').textContent = 'Unable to load SOSFam data';
+  });
+}
+setInterval(function(){ loadAll(); loadSOSFam(); }, 60000);
+
+function toggleTheme(){
+  var isLight=document.body.classList.toggle('light');
+  document.getElementById('theme-btn').textContent=isLight?'🌙 Dark':'☀️ Light';
+  try{localStorage.setItem('dash-theme',isLight?'light':'dark');}catch(e){}
+}
+// Restore saved theme
+try{if(localStorage.getItem('dash-theme')==='light'){document.body.classList.add('light');document.getElementById('theme-btn').textContent='🌙 Dark';}}catch(e){}
+
 </script>
 </body>
 </html>
