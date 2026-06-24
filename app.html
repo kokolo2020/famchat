@@ -588,7 +588,12 @@ button, input, textarea { font-family:inherit; }
 const SUPABASE_URL = 'https://mjnigheggxtythytsqle.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qbmlnaGVnZ3h0eXRoeXRzcWxlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzYwMDcsImV4cCI6MjA5NTY1MjAwN30.mh1psePuKeQ8SH5uita7BsUKd6wd5IwHVVlDmJCMA0Q';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  global: { headers: { 'x-app-token': 'afc5da2bce3e7e74797ed1bd8c513265bbdd12de5d09469019bda4927dd1e71d' } }
+  global: { headers: { 'x-app-token': 'afc5da2bce3e7e74797ed1bd8c513265bbdd12de5d09469019bda4927dd1e71d' } },
+  realtime: {
+    params: { eventsPerSecond: 10 },
+    reconnectAfterMs: (tries) => Math.min(tries * 1000, 10000),
+    heartbeatIntervalMs: 15000,
+  }
 });
 
 let currentUser=null, currentFamilyId=null, currentFamily=null, currentRoom=null;
@@ -794,7 +799,13 @@ function subscribeRealtime() {
   realtimeSub = sb.channel('fam_messages_' + currentFamilyId + '_' + currentRoom.id)
     .on('postgres_changes', { event:'INSERT', schema:'public', table:'fam_messages', filter:`room_id=eq.${currentRoom.id}` }, payload => {
       if (payload.new.family_id === currentFamilyId) { removeOptimisticIfMatch(payload.new); appendSingleMessage(payload.new); }
-    }).subscribe();
+    }).subscribe((status, err) => {
+      if (status === 'SUBSCRIBED') console.log('Realtime connected');
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.warn('Realtime issue, retrying...', err);
+        setTimeout(subscribeRealtime, 3000);
+      }
+    });
 }
 async function sendMessage() {
   const input = document.getElementById('msgInput'); const text = input.value.trim();
