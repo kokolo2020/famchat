@@ -5,28 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#060F10">
+<meta name="theme-color" content="#1A0505">
 <title>SOSFam</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 :root {
-  --bg:#060F10;
-  --surface:#0C1E20;
-  --surface2:#122527;
-  --surface3:#0E2022;
-  --teal:#00C9A7;
-  --teal2:#00A88A;
-  --teal-dim:rgba(0,201,167,.12);
-  --teal-border:rgba(0,201,167,.22);
+  --bg:#1A0505;
+  --surface:#2A0808;
+  --surface2:#340B0B;
+  --surface3:#2E0A0A;
+  --teal:#FF6B6B;
+  --teal2:#DC2626;
+  --teal-dim:rgba(220,38,38,.14);
+  --teal-border:rgba(220,38,38,.28);
   --red:#FF3B3B;
   --red2:#CC2222;
-  --red-dim:rgba(255,59,59,.13);
-  --red-border:rgba(255,59,59,.28);
-  --text:#EEF3F3;
-  --text2:#C8DADA;
-  --muted:#7A9898;
+  --red-dim:rgba(255,59,59,.15);
+  --red-border:rgba(255,59,59,.35);
+  --text:#FFF0F0;
+  --text2:#FECACA;
+  --muted:#A87A7A;
   --line:rgba(255,255,255,.07);
   --line2:rgba(255,255,255,.04);
   --radius:18px;
@@ -41,25 +41,25 @@ button, input, textarea { font-family:inherit; }
 #loginScreen, #registerScreen {
   align-items:center; justify-content:center; padding:20px;
   background:
-    radial-gradient(ellipse 70% 50% at 30% 0%, rgba(0,201,167,.07), transparent),
-    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(255,59,59,.05), transparent),
+    radial-gradient(ellipse 70% 50% at 30% 0%, rgba(220,38,38,.12), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(180,20,20,.08), transparent),
     var(--bg);
   overflow-y:auto;
 }
 .login-box {
   width:100%; max-width:400px;
-  background:rgba(12,30,32,.96);
+  background:rgba(42,8,8,.96);
   border:1px solid rgba(255,255,255,.09);
   border-radius:28px; padding:32px 26px;
-  box-shadow:0 32px 80px rgba(0,0,0,.5);
+  box-shadow:0 32px 80px rgba(0,0,0,.6);
 }
 .brand { text-align:center; margin-bottom:28px; }
 .brand-icon {
   width:72px; height:72px; border-radius:22px;
-  background:linear-gradient(135deg, var(--teal), var(--teal2));
+  background:linear-gradient(135deg, #FF3B3B, #991111);
   display:grid; place-items:center; font-size:36px;
   margin:0 auto 14px;
-  box-shadow:0 12px 36px rgba(0,201,167,.22);
+  box-shadow:0 12px 36px rgba(220,38,38,.35);
 }
 .brand h1 { font-size:32px; font-weight:900; letter-spacing:-1.5px; }
 .brand h1 span { color:var(--teal); }
@@ -82,15 +82,15 @@ button, input, textarea { font-family:inherit; }
   transition:border-color .15s;
 }
 .input:focus { border-color:var(--teal); }
-.input::placeholder { color:#4A6A6A; }
+.input::placeholder { color:#7A4A4A; }
 
 .btn-primary {
   width:100%; border:0;
-  background:linear-gradient(135deg, var(--teal), var(--teal2));
+  background:linear-gradient(135deg, #DC2626, #991111);
   color:#fff; border-radius:var(--radius-sm);
   padding:15px; font-size:15px; font-weight:800;
   cursor:pointer; margin-top:22px;
-  box-shadow:0 10px 28px rgba(0,201,167,.18);
+  box-shadow:0 10px 28px rgba(220,38,38,.3);
   transition:opacity .15s, transform .1s;
 }
 .btn-primary:active { transform:scale(.98); }
@@ -138,7 +138,7 @@ button, input, textarea { font-family:inherit; }
 #chatScreen { background:var(--bg); }
 
 .chat-header {
-  background:rgba(10,24,26,.97);
+  background:rgba(30,5,5,.97);
   border-bottom:1px solid var(--line);
   padding:11px 14px;
   display:flex; align-items:center; gap:10px;
@@ -158,7 +158,7 @@ button, input, textarea { font-family:inherit; }
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .header-sub { font-size:11px; color:var(--muted); margin-top:2px; display:flex; align-items:center; justify-content:center; gap:5px; }
-.online-dot { width:7px; height:7px; border-radius:50%; background:var(--teal); display:inline-block; }
+.online-dot { width:7px; height:7px; border-radius:50%; background:#FF6B6B; display:inline-block; }
 .header-actions { display:flex; gap:7px; align-items:center; }
 .icon-btn {
   border:1px solid var(--line); background:var(--surface2); color:var(--muted);
@@ -176,7 +176,7 @@ button, input, textarea { font-family:inherit; }
 
 /* Session bar */
 #countdownBar {
-  display:none; background:rgba(0,201,167,.07);
+  display:none; background:rgba(220,38,38,.07);
   border-bottom:1px solid var(--teal-border);
   padding:7px 16px; align-items:center; justify-content:center; gap:10px;
   flex-shrink:0;
@@ -190,7 +190,7 @@ button, input, textarea { font-family:inherit; }
 /* Pinned card */
 .pinned-card {
   margin:10px 12px 0;
-  background:linear-gradient(135deg, rgba(0,201,167,.1), rgba(0,168,138,.05));
+  background:linear-gradient(135deg, rgba(220,38,38,.1), rgba(180,20,20,.05));
   border:1px solid var(--teal-border); border-radius:16px;
   padding:12px 14px; flex-shrink:0; cursor:pointer;
   transition:background .15s;
@@ -231,13 +231,13 @@ button, input, textarea { font-family:inherit; }
 .msg-group { display:flex; flex-direction:column; gap:2px; margin-bottom:10px; }
 .msg-group.mine { align-items:flex-end; }
 .msg-group.theirs { align-items:flex-start; }
-.msg-sender { font-size:11px; font-weight:800; color:var(--teal); padding:0 10px; margin-bottom:3px; }
+.msg-sender { font-size:11px; font-weight:800; color:#F87171; padding:0 10px; margin-bottom:3px; }
 .msg-bubble {
   max-width:75%; padding:11px 15px; border-radius:20px;
   font-size:15px; line-height:1.5; word-break:break-word;
 }
 .mine .msg-bubble {
-  background:linear-gradient(135deg, var(--teal), var(--teal2));
+  background:linear-gradient(135deg, #DC2626, #991111);
   color:#fff; border-bottom-right-radius:5px;
 }
 .theirs .msg-bubble {
@@ -249,7 +249,7 @@ button, input, textarea { font-family:inherit; }
 
 /* Input */
 .chat-input-wrap {
-  background:rgba(10,24,26,.98);
+  background:rgba(30,5,5,.98);
   border-top:1px solid var(--line);
   padding:10px 12px;
   display:flex; align-items:center; gap:9px; flex-shrink:0;
@@ -264,10 +264,10 @@ button, input, textarea { font-family:inherit; }
 .chat-input:focus { border-color:var(--teal); }
 .chat-input::placeholder { color:#4A6A6A; }
 .send-btn {
-  background:var(--teal); border:0; border-radius:50%;
+  background:#DC2626; border:0; border-radius:50%;
   width:44px; height:44px; font-size:18px; color:#fff;
   cursor:pointer; flex-shrink:0;
-  box-shadow:0 4px 14px rgba(0,201,167,.22);
+  box-shadow:0 4px 14px rgba(220,38,38,.3);
   transition:transform .1s;
 }
 .send-btn:active { transform:scale(.92); }
