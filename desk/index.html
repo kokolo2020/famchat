@@ -40,6 +40,12 @@ input[type=range]{width:100%;accent-color:var(--acc)}.two{display:grid;grid-temp
 .nh{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:4px}.nh b{font:600 14px var(--fm)}.nh em{font:400 12px var(--fb);color:var(--mut);margin-left:auto;font-style:normal}
 .pill{font:600 11px var(--fm);padding:2px 8px;border-radius:99px;background:var(--chip);color:var(--mut)}.pill.bearish{color:var(--loss)}.pill.bullish{color:var(--gain)}
 .ni p{margin:2px 0 6px;font-size:14px;overflow-wrap:anywhere}.ni .cat{font-weight:600}.ni .src a{font-size:12px;color:var(--acc);margin-right:10px;text-decoration:none}.ni .src a:hover{text-decoration:underline}
+.sim{display:grid;gap:14px}.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.amt button{font:600 14px var(--fm);padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--chip);color:var(--ink);cursor:pointer}
+.amt button[aria-pressed="true"]{background:var(--acc);color:var(--bg);border-color:var(--acc)}.amt button:focus-visible,select:focus-visible,.go:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+select{font:500 14px var(--fb);padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--chip);color:var(--ink);max-width:100%}
+.go{font:600 13px var(--fb);padding:9px 14px;border-radius:8px;border:1px solid var(--acc);background:transparent;color:var(--acc);cursor:pointer}
+.big{font:600 34px var(--fm);font-variant-numeric:tabular-nums}.bigs{display:flex;flex-wrap:wrap;gap:6px 28px;align-items:baseline}.bigs small{color:var(--mut);font:400 13px var(--fb)}
 .only{color:var(--mut);font-size:13px;margin:0}
 svg text{font:11px var(--fm);fill:var(--mut)}
 </style>
@@ -48,6 +54,12 @@ svg text{font:11px var(--fm);fill:var(--mut)}
 <header><div><h1>Desk Ledger</h1><p class="sub">Paper trading, nine strategies, one market. No real money.</p></div><span class="badge" id="badge"><i></i><span id="src">Loading</span></span></header>
 <section class="fig" id="fig"></section>
 <section class="card"><h2>Cumulative net P/L after fees</h2><svg id="chart" viewBox="0 0 900 340" role="img" aria-label="Cumulative net profit and loss per desk by hour"></svg><div class="leg" id="leg"></div></section>
+<section class="card sim"><h2>Try it with your own amount</h2>
+<div class="ctl"><div class="ctl amt" id="amts" role="group" aria-label="Starting amount"></div><label for="dsel" class="only">Desk</label><select id="dsel"></select></div>
+<div id="simo"></div><svg id="simc" viewBox="0 0 900 240" role="img" aria-label="Simulated account value by day" style="width:100%;height:auto;display:block"></svg>
+<div class="tw"><table style="min-width:420px"><thead><tr><th>Day</th><th>Day P/L</th><th>Account value</th><th>Total</th></tr></thead><tbody id="simt"></tbody></table></div>
+<div class="ctl"><button type="button" class="go" id="track">Start following from now</button><span class="only" id="trk"></span></div>
+<p class="only">Replays what each desk actually did in this paper test, scaled to your amount. Results include fees but ignore slippage and funding. Desks use 5x leverage and can lose most of a balance quickly. Past results from a few days say little about the future. This is a simulation, not advice.</p></section>
 <section class="card" id="mkt"><h2>Market now</h2><p class="only">Live view only. Open the live page to see breadth and open positions.</p></section>
 <section class="card" id="news"><h2>News on the coins we trade</h2><p class="only">Live view only. Open the live page for the latest scan.</p></section>
 <section class="card"><h2>Desks</h2><div class="tw"><table><thead><tr><th>Desk</th><th>Trades</th><th>Win</th><th>Volume</th><th>Fees</th><th>Net</th><th>Open</th><th>Trend</th></tr></thead><tbody id="rows"></tbody></table></div></section>
@@ -67,7 +79,34 @@ function news(S){var seen={},items=(S.news||[]).filter(function(n){if(seen[n.coi
  var bear=items.filter(function(n){return n.sentiment==='bearish'}).length,bull=items.filter(function(n){return n.sentiment==='bullish'}).length;
  document.getElementById('news').innerHTML='<h2>News on the coins we trade</h2><p class="only" style="margin-bottom:6px">Latest scan per coin: '+bear+' bearish, '+bull+' bullish, '+(items.length-bear-bull)+' neutral. The scanner reads one coin every 15 minutes.</p><div class="nw">'+items.map(function(n){var links=(n.sources||[]).filter(function(u){return /^https:\/\//.test(u)}).slice(0,3).map(function(u){var h=u.replace(/^https:\/\/(www\.)?/,'').split('/')[0];return '<a href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">'+esc(h)+'</a>'}).join('');
   return '<div class="ni"><div class="nh"><b>'+esc(n.coin)+'</b><span class="pill '+esc(n.sentiment)+'">'+esc(n.sentiment||'neutral')+(n.strength!=null?' '+Math.round(n.strength*100)+'%':'')+'</span><em>'+ago(n.ts)+'</em></div><p class="cat">'+esc(n.catalyst)+'</p><p>'+esc(n.summary)+'</p><div class="src">'+links+'</div></div>'}).join('')+'</div>'}
-function extras(S){
+var AMTS=[1000,2000,5000,10000],BANK=12500,RSMS=Date.parse(RS);
+function ld(k,d){try{var v=localStorage.getItem(k);return v==null?d:v}catch(e){return d}}function sv(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+var simAmt=+ld('dl_amt',5000),simDesk=ld('dl_desk','all'),simStart=+ld('dl_start',0);
+function simulate(S){
+ var ds=simDesk==='all'?DESKS.map(function(d){return d[0]}):[simDesk],byH={};
+ S.b.forEach(function(r){if(ds.indexOf(r[0])>=0)byH[r[1]]=(byH[r[1]]||0)+r[6]});
+ var per=BANK*ds.length,k=simAmt/per,hs=Object.keys(byH).map(Number),last=Math.max.apply(null,hs.concat([Math.floor(RSMS/3600000)])),days={},c=0,val=[simAmt],lab=['Start'];
+ for(var h=Math.floor(RSMS/3600000);h<=last;h++){var dn=Math.floor((h*3600000-RSMS)/86400000);days[dn]=(days[dn]||0)+(byH[h]||0)*k}
+ var rows=[],v=simAmt,pk=simAmt,dd=0,nd=Math.max.apply(null,Object.keys(days).map(Number).concat([0]));
+ for(var d=0;d<=nd;d++){var p=days[d]||0;v+=p;pk=Math.max(pk,v);dd=Math.min(dd,v-pk);rows.push({d:d+1,p:p,v:v,t:v-simAmt});val.push(v);lab.push('Day '+(d+1))}
+ var worst=rows.reduce(function(a,r){return r.p<a?r.p:a},0),tr='';
+ if(simStart){var sh=Math.floor(simStart/3600000),tp=0;hs.forEach(function(h){if(h>sh)tp+=byH[h]*k});tr='Since you started ('+new Date(simStart).toLocaleDateString([], {month:'short',day:'numeric'})+'): <b class="'+cls(tp)+'">'+money(tp)+'</b>'}
+ document.getElementById('trk').innerHTML=tr||'Saves your pick on this device and tracks from today.';
+ document.getElementById('track').textContent=simStart?'Restart from now':'Start following from now';
+ var tot=v-simAmt;
+ document.getElementById('simo').innerHTML='<div class="bigs"><span class="big">$'+Math.round(v).toLocaleString()+'</span><span class="'+cls(tot)+'">'+money(tot)+' ('+(tot/simAmt*100).toFixed(1)+'%)</span><small>from $'+simAmt.toLocaleString()+' on 14 Oct</small></div><div class="bigs"><small>Worst day <b class="'+cls(worst)+'">'+money(worst)+'</b></small><small>Biggest drop from a peak <b class="'+cls(dd)+'">'+money(dd)+'</b></small></div>';
+ var mn=Math.min.apply(null,val),mx=Math.max.apply(null,val),pd=(mx-mn)*.1||simAmt*.02,lo=mn-pd,hi=mx+pd,W=900,H=240,L=64,R=16,T=10,Bm=26,X=function(i){return L+(W-L-R)*i/Math.max(1,val.length-1)},Y=function(q){return T+(H-T-Bm)*(1-(q-lo)/(hi-lo))},g='';
+ for(var i=0;i<=3;i++){var q=lo+(hi-lo)*i/3;g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(q)+'" y2="'+Y(q)+'" stroke="var(--line)"/><text x="'+(L-8)+'" y="'+(Y(q)+4)+'" text-anchor="end">$'+Math.round(q).toLocaleString()+'</text>'}
+ g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(simAmt)+'" y2="'+Y(simAmt)+'" stroke="var(--mut)" stroke-dasharray="3 4"/>';
+ var pth=val.map(function(q,i){return (i?'L':'M')+X(i).toFixed(1)+' '+Y(q).toFixed(1)}).join(' ');
+ g+='<path d="'+pth+' L'+X(val.length-1)+' '+Y(lo)+' L'+X(0)+' '+Y(lo)+'Z" fill="'+(tot<0?'var(--loss)':'var(--gain)')+'" opacity=".12"/><path d="'+pth+'" fill="none" stroke="'+(tot<0?'var(--loss)':'var(--gain)')+'" stroke-width="2.6" stroke-linejoin="round"/>';
+ val.forEach(function(q,i){g+='<circle cx="'+X(i)+'" cy="'+Y(q)+'" r="3.5" fill="var(--panel)" stroke="'+(tot<0?'var(--loss)':'var(--gain)')+'" stroke-width="2"/><text x="'+X(i)+'" y="'+(H-7)+'" text-anchor="middle">'+(i?'D'+i:'Start')+'</text>'});
+ document.getElementById('simc').innerHTML=g;
+ document.getElementById('simt').innerHTML=rows.map(function(r){return '<tr><td>Day '+r.d+'</td><td class="'+cls(r.p)+'">'+money(r.p)+'</td><td>$'+Math.round(r.v).toLocaleString()+'</td><td class="'+cls(r.t)+'">'+money(r.t)+'</td></tr>'}).join('')}
+function simUI(){var a=document.getElementById('amts');a.innerHTML=AMTS.map(function(x){return '<button type="button" data-a="'+x+'" aria-pressed="'+(x===simAmt)+'">$'+x.toLocaleString()+'</button>'}).join('');
+ Array.prototype.forEach.call(a.querySelectorAll('button'),function(b){b.onclick=function(){simAmt=+b.dataset.a;sv('dl_amt',simAmt);simUI();simulate(cur)}});
+ var sel=document.getElementById('dsel');if(!sel.options.length){sel.innerHTML='<option value="all">Split across all desks</option>'+DESKS.map(function(d){return '<option value="'+d[0]+'">'+d[1]+'</option>'}).join('');sel.value=simDesk;if(sel.value!==simDesk){simDesk='all';sel.value='all'}sel.onchange=function(){simDesk=sel.value;sv('dl_desk',simDesk);simulate(cur)};document.getElementById('track').onclick=function(){simStart=Date.now();sv('dl_start',simStart);simulate(cur)}}}
+function extras(S){simulate(S);
  var rb=+document.getElementById('rb').value,fees=S.b.reduce(function(a,r){return a+r[5]},0),net=S.b.reduce(function(a,r){return a+r[6]},0),vol=S.b.reduce(function(a,r){return a+r[4]},0);
  document.getElementById('rbv').textContent=rb+'%';
  document.getElementById('rbo').innerHTML=[['Fees paid','$'+Math.round(fees).toLocaleString()],['Rebate at '+rb+'%','<span class="g">+$'+Math.round(fees*rb/100).toLocaleString()+'</span>'],['Net P/L now','<span class="'+cls(net)+'">'+money(net)+'</span>'],['Net with rebate','<span class="'+cls(net+fees*rb/100)+'">'+money(net+fees*rb/100)+'</span>'],['Volume','$'+(vol/1e6).toFixed(2)+'M']].map(function(a){return '<div class="kv"><span>'+a[0]+'</span><span>'+a[1]+'</span></div>'}).join('')+'<p class="only" style="margin-top:10px">Illustration only. Paper trades earn no real commission.</p>';
@@ -114,7 +153,7 @@ async function live(){var rows=[];for(var o=0;;o+=1000){var r=await (await fetch
  var openRows=await (await fetch(B+'ap_positions?select=coin,side,entry_price,size,notional,opened_at&status=eq.open&order=opened_at.desc&limit=300',{headers:{apikey:K,Authorization:'Bearer '+K}})).json();
  var nw=await (await fetch(B+'ap_news?select=coin,ts,catalyst,summary,sentiment,strength,sources&order=ts.desc&limit=60',{headers:{apikey:K,Authorization:'Bearer '+K}})).json();
  return {at:Date.now(),news:Array.isArray(nw)?nw:[],b:fromRows(rows),open:oc,px:px,cn:cn,openRows:openRows}}
-document.getElementById('rb').oninput=function(){extras(cur)};var cur=SNAP,isLive=false;render(cur,false);
+document.getElementById('rb').oninput=function(){extras(cur)};var cur=SNAP,isLive=false;simUI();render(cur,false);
 function tick(){live().then(function(S){cur=S;isLive=true;render(S,true)}).catch(function(){render(cur,isLive)})}
 tick();setInterval(tick,60000);
 </script>
