@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Market Desk</title>
+<meta name="description" content="Live paper-trading scoreboard for AI and rules-based crypto desks. No real money.">
+<style>
+:root{--bg:#0e1116;--card:#171b22;--ink:#e7eaf0;--mut:#8b93a1;--g:#3ecf8e;--r:#ff6b6b;--line:#262c36}
+@media(prefers-color-scheme:light){:root{--bg:#f6f7f9;--card:#fff;--ink:#14171c;--mut:#667085;--g:#0a8f55;--r:#d13a3a;--line:#e3e6ea}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,sans-serif}
+main{max-width:860px;margin:0 auto;padding:20px 16px 40px}h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.t{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}.t b{display:block;font-size:20px}.t span{color:var(--mut);font-size:12px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--line)}th:first-child,td:first-child{text-align:left}
+th{color:var(--mut);font-size:12px;font-weight:600}tr:last-child td{border-bottom:0}.g{color:var(--g)}.r{color:var(--r)}
+.wrap{overflow-x:auto}.note{color:var(--mut);font-size:12px;margin-top:14px}.desc{color:var(--mut);font-size:12px;display:block}
+</style></head><body><main>
+<h1>AI Market Desk</h1>
+<p class="sub">Live paper-trading scoreboard. Simulated money only, nothing here is financial advice.</p>
+<div class="tiles" id="tiles"></div>
+<div class="wrap"><table><thead><tr><th>Desk</th><th>Trades</th><th>Win %</th><th>Volume</th><th>Fees</th><th>Net P/L</th></tr></thead><tbody id="rows"><tr><td colspan="6">Loading…</td></tr></tbody></table></div>
+<p class="note" id="stamp"></p>
+<p class="note">Each desk starts with $250 per coin at 5x leverage and pays simulated exchange fees. Counts closed trades since 14 Oct 2026. Backtests are from a short sample, so results are a forward test, not a promise.</p>
+</main>
+<script>
+var B='https://seiqqvplosnwquaksshm.supabase.co/rest/v1/',K='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlaXFxdnBsb3Nud3F1YWtzc2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwNTAzMTUsImV4cCI6MjA5ODYyNjMxNX0.FPcGOaZqdAXje_BI1a8BKYQrMi5uS2zm0Oy3hopZdho';
+var RS='2026-10-14T11:00:00Z';
+var D={'':['Aggressive AI','Claude picks the trades'],n:['Normal AI','strictest gate'],s:['Super AI','paused'],u:['Ultra AI','paused'],m:['Maker AI','limit orders, paused'],algo:['Algo','range mean reversion, no AI'],algo2:['Algo v2','short after a 1.5% bounce'],algo3:['Algo v3','v2 only when 90%+ of coins are down'],rev:['Neutral Reversal','long 8 weakest, short 8 strongest, 24h hold']};
+function money(x){var s=Math.round(Math.abs(x)).toLocaleString();return (x<0?'-$':'+$')+s}
+function cls(x){return x<0?'r':x>0?'g':''}
+async function load(){var rows=[];for(var o=0;;o+=1000){var r=await (await fetch(B+'ap_positions?select=coin,notional,pnl,fees,status&status=eq.closed&opened_at=gte.'+RS+'&offset='+o+'&limit=1000',{headers:{apikey:K,Authorization:'Bearer '+K}})).json();if(!Array.isArray(r))throw 0;rows=rows.concat(r);if(r.length<1000)break}
+var d={},T={n:0,vol:0,fees:0,net:0,w:0};
+rows.forEach(function(p){var k=p.coin.indexOf(':')<0?'':p.coin.split(':')[1];var x=d[k]=d[k]||{n:0,w:0,vol:0,fees:0,net:0};x.n++;x.vol+=p.notional*2;x.fees+=+p.fees;x.net+=+p.pnl;if(+p.pnl>0)x.w++;T.n++;T.vol+=p.notional*2;T.fees+=+p.fees;T.net+=+p.pnl;if(+p.pnl>0)T.w++});
+document.getElementById('tiles').innerHTML=[['Closed trades',T.n.toLocaleString()],['Volume','$'+Math.round(T.vol/1000).toLocaleString()+'K'],['Fees paid','$'+Math.round(T.fees).toLocaleString()],['Net P/L','<span class="'+cls(T.net)+'">'+money(T.net)+'</span>']].map(function(a){return '<div class="t"><span>'+a[0]+'</span><b>'+a[1]+'</b></div>'}).join('');
+document.getElementById('rows').innerHTML=Object.keys(D).filter(function(k){return d[k]}).sort(function(a,b){return d[b].net-d[a].net}).map(function(k){var x=d[k];return '<tr><td><b>'+D[k][0]+'</b><span class="desc">'+D[k][1]+'</span></td><td>'+x.n+'</td><td>'+Math.round(x.w/x.n*100)+'%</td><td>$'+Math.round(x.vol/1000)+'K</td><td>$'+Math.round(x.fees)+'</td><td class="'+cls(x.net)+'">'+money(x.net)+'</td></tr>'}).join('');
+document.getElementById('stamp').textContent='Updated '+new Date().toLocaleString()}
+function go(){load().catch(function(){document.getElementById('stamp').textContent='Data unavailable right now.'})}
+go();setInterval(go,60000);
+</script></body></html>
