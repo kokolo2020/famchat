@@ -1,38 +1,85 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AI Market Desk</title>
-<meta name="description" content="Live paper-trading scoreboard for AI and rules-based crypto desks. No real money.">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Desk Ledger</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=JetBrains+Mono:wght@400;600&family=Figtree:wght@400;500;600&display=swap">
 <style>
-:root{--bg:#0e1116;--card:#171b22;--ink:#e7eaf0;--mut:#8b93a1;--g:#3ecf8e;--r:#ff6b6b;--line:#262c36}
-@media(prefers-color-scheme:light){:root{--bg:#f6f7f9;--card:#fff;--ink:#14171c;--mut:#667085;--g:#0a8f55;--r:#d13a3a;--line:#e3e6ea}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,sans-serif}
-main{max-width:860px;margin:0 auto;padding:20px 16px 40px}h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
-.t{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}.t b{display:block;font-size:20px}.t span{color:var(--mut);font-size:12px}
-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-th,td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--line)}th:first-child,td:first-child{text-align:left}
-th{color:var(--mut);font-size:12px;font-weight:600}tr:last-child td{border-bottom:0}.g{color:var(--g)}.r{color:var(--r)}
-.wrap{overflow-x:auto}.note{color:var(--mut);font-size:12px;margin-top:14px}.desc{color:var(--mut);font-size:12px;display:block}
-</style></head><body><main>
-<h1>AI Market Desk</h1>
-<p class="sub">Live paper-trading scoreboard. Simulated money only, nothing here is financial advice.</p>
-<div class="tiles" id="tiles"></div>
-<div class="wrap"><table><thead><tr><th>Desk</th><th>Trades</th><th>Win %</th><th>Volume</th><th>Fees</th><th>Net P/L</th></tr></thead><tbody id="rows"><tr><td colspan="6">Loading…</td></tr></tbody></table></div>
-<p class="note" id="stamp"></p>
-<p class="note">Each desk starts with $250 per coin at 5x leverage and pays simulated exchange fees. Counts closed trades since 14 Oct 2026. Backtests are from a short sample, so results are a forward test, not a promise.</p>
+/* Layout: one column ledger. Header with data source badge, four headline figures, cumulative P/L chart with toggle legend, desk table with sparklines, notes. */
+:root{--bg:#f3f5f8;--panel:#fff;--ink:#0d1520;--mut:#5d6b7d;--line:#dde3ea;--acc:#1769c9;--gain:#0b8a55;--loss:#c93a3a;--chip:#eaeff5;
+--fd:'Bricolage Grotesque',system-ui,sans-serif;--fb:'Figtree',system-ui,sans-serif;--fm:'JetBrains Mono',ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a0e14;--panel:#111821;--ink:#e6edf5;--mut:#8796a8;--line:#1f2a37;--acc:#6db4ff;--gain:#3fcf8e;--loss:#ff6b6b;--chip:#18222e;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0a0e14;--panel:#111821;--ink:#e6edf5;--mut:#8796a8;--line:#1f2a37;--acc:#6db4ff;--gain:#3fcf8e;--loss:#ff6b6b;--chip:#18222e;color-scheme:dark}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--fb);margin:0;padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:980px;margin:0 auto;display:grid;gap:18px}
+header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:end;justify-content:space-between}
+h1{font:700 30px/1.05 var(--fd);margin:0;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--mut);margin:4px 0 0}
+.badge{font:600 12px var(--fm);padding:5px 10px;border-radius:99px;background:var(--chip);color:var(--mut);display:inline-flex;gap:7px;align-items:center}
+.badge i{width:8px;height:8px;border-radius:50%;background:var(--mut)}.badge.live i{background:var(--gain)}
+.fig{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.fig div{background:var(--panel);padding:14px 16px;min-width:0}.fig span{display:block;color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+.fig b{font:600 24px var(--fm);font-variant-numeric:tabular-nums}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+h2{font:600 13px var(--fb);text-transform:uppercase;letter-spacing:.1em;color:var(--mut);margin:0 0 12px}
+#chart{width:100%;height:auto;display:block}
+.leg{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.leg button{font:500 12px var(--fb);color:var(--ink);background:var(--chip);border:1px solid transparent;border-radius:99px;padding:5px 10px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.leg button i{width:10px;height:3px;border-radius:2px;display:inline-block}
+.leg button[aria-pressed="false"]{opacity:.45}.leg button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:640px}
+th,td{padding:10px 8px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+th{font:600 11px var(--fb);text-transform:uppercase;letter-spacing:.08em;color:var(--mut)}
+th:first-child,td:first-child{text-align:left}td{font:400 13px var(--fm)}td:first-child{font:600 14px var(--fb)}
+tr:last-child td{border-bottom:0}.d{display:block;color:var(--mut);font:400 12px var(--fb)}
+.g{color:var(--gain)}.r{color:var(--loss)}.tag{font:600 10px var(--fm);padding:2px 6px;border-radius:4px;background:var(--chip);color:var(--mut);margin-left:6px;vertical-align:middle}
+.note{color:var(--mut);font-size:13px;max-width:70ch;margin:0}
+svg text{font:11px var(--fm);fill:var(--mut)}
+</style>
+</head><body>
+<main>
+<header><div><h1>Desk Ledger</h1><p class="sub">Paper trading, nine strategies, one market. No real money.</p></div><span class="badge" id="badge"><i></i><span id="src">Loading</span></span></header>
+<section class="fig" id="fig"></section>
+<section class="card"><h2>Cumulative net P/L after fees</h2><svg id="chart" viewBox="0 0 900 340" role="img" aria-label="Cumulative net profit and loss per desk by hour"></svg><div class="leg" id="leg"></div></section>
+<section class="card"><h2>Desks</h2><div class="tw"><table><thead><tr><th>Desk</th><th>Trades</th><th>Win</th><th>Volume</th><th>Fees</th><th>Net</th><th>Open</th><th>Trend</th></tr></thead><tbody id="rows"></tbody></table></div></section>
+<p class="note">Each desk trades $250 per coin at 5x leverage over 50 coins and pays simulated taker fees of 0.055% per side. Counts cover closed trades since 14 Oct 2026, 11:00 UTC. Backtests behind the newest desks (Algo v3 and Neutral Reversal) use only 14 days of data, so these are forward tests. Nothing here is financial advice.</p>
 </main>
 <script>
-var B='https://seiqqvplosnwquaksshm.supabase.co/rest/v1/',K='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlaXFxdnBsb3Nud3F1YWtzc2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwNTAzMTUsImV4cCI6MjA5ODYyNjMxNX0.FPcGOaZqdAXje_BI1a8BKYQrMi5uS2zm0Oy3hopZdho';
-var RS='2026-10-14T11:00:00Z';
-var D={'':['Aggressive AI','Claude picks the trades'],n:['Normal AI','strictest gate'],s:['Super AI','paused'],u:['Ultra AI','paused'],m:['Maker AI','limit orders, paused'],algo:['Algo','range mean reversion, no AI'],algo2:['Algo v2','short after a 1.5% bounce'],algo3:['Algo v3','v2 only when 90%+ of coins are down'],rev:['Neutral Reversal','long 8 weakest, short 8 strongest, 24h hold']};
-function money(x){var s=Math.round(Math.abs(x)).toLocaleString();return (x<0?'-$':'+$')+s}
-function cls(x){return x<0?'r':x>0?'g':''}
-async function load(){var rows=[];for(var o=0;;o+=1000){var r=await (await fetch(B+'ap_positions?select=coin,notional,pnl,fees,status&status=eq.closed&opened_at=gte.'+RS+'&offset='+o+'&limit=1000',{headers:{apikey:K,Authorization:'Bearer '+K}})).json();if(!Array.isArray(r))throw 0;rows=rows.concat(r);if(r.length<1000)break}
-var d={},T={n:0,vol:0,fees:0,net:0,w:0};
-rows.forEach(function(p){var k=p.coin.indexOf(':')<0?'':p.coin.split(':')[1];var x=d[k]=d[k]||{n:0,w:0,vol:0,fees:0,net:0};x.n++;x.vol+=p.notional*2;x.fees+=+p.fees;x.net+=+p.pnl;if(+p.pnl>0)x.w++;T.n++;T.vol+=p.notional*2;T.fees+=+p.fees;T.net+=+p.pnl;if(+p.pnl>0)T.w++});
-document.getElementById('tiles').innerHTML=[['Closed trades',T.n.toLocaleString()],['Volume','$'+Math.round(T.vol/1000).toLocaleString()+'K'],['Fees paid','$'+Math.round(T.fees).toLocaleString()],['Net P/L','<span class="'+cls(T.net)+'">'+money(T.net)+'</span>']].map(function(a){return '<div class="t"><span>'+a[0]+'</span><b>'+a[1]+'</b></div>'}).join('');
-document.getElementById('rows').innerHTML=Object.keys(D).filter(function(k){return d[k]}).sort(function(a,b){return d[b].net-d[a].net}).map(function(k){var x=d[k];return '<tr><td><b>'+D[k][0]+'</b><span class="desc">'+D[k][1]+'</span></td><td>'+x.n+'</td><td>'+Math.round(x.w/x.n*100)+'%</td><td>$'+Math.round(x.vol/1000)+'K</td><td>$'+Math.round(x.fees)+'</td><td class="'+cls(x.net)+'">'+money(x.net)+'</td></tr>'}).join('');
-document.getElementById('stamp').textContent='Updated '+new Date().toLocaleString()}
-function go(){load().catch(function(){document.getElementById('stamp').textContent='Data unavailable right now.'})}
-go();setInterval(go,60000);
-</script></body></html>
+var B='https://seiqqvplosnwquaksshm.supabase.co/rest/v1/',K='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlaXFxdnBsb3Nud3F1YWtzc2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwNTAzMTUsImV4cCI6MjA5ODYyNjMxNX0.FPcGOaZqdAXje_BI1a8BKYQrMi5uS2zm0Oy3hopZdho',RS='2026-10-14T11:00:00Z';
+var SNAP={at:1792071834910,open:{"u":6,"s":3,"ai":1,"m":3,"algo":15,"n":1,"rev":16,"algo2":10,"algo3":4},b:[["algo",497771,2,1,5000,2.75,3.71],["ai",497771,1,0,2500,1.38,-7.62],["ai",497772,23,9,57482,31.61,-36.91],["algo",497772,8,1,19976,10.99,-55.91],["u",497774,33,15,81560,44.86,-0.97],["s",497772,7,0,17500,9.63,-57.54],["u",497772,7,0,17500,9.63,-57.54],["algo",497773,28,16,69744,38.36,-4.5],["u",497773,14,2,35023,19.26,-68.11],["algo",497774,18,12,44540,24.5,24.4],["m",497774,11,2,27428,9.41,-44.86],["s",497774,27,10,67090,36.9,-39.83],["m",497775,16,2,39904,14.09,-68.33],["ai",497775,16,3,39844,21.91,-68.68],["ai",497776,15,8,37011,20.36,15.29],["s",497776,24,10,58856,32.37,-21.57],["u",497777,38,6,93178,51.25,-165],["ai",497777,18,2,43824,24.1,-78.23],["m",497779,24,11,59204,20.05,-19.95],["ai",497779,16,7,39478,21.71,-4.97],["u",497780,39,6,93884,51.64,-179.52],["s",497780,31,5,75209,41.36,-154.25],["n",497780,5,1,12355,6.8,-19],["ai",497780,21,3,51552,28.35,-97.8],["ai",497782,6,4,14940,8.22,-3.56],["ai",497781,17,2,40973,22.54,-91.41],["s",497781,26,6,63470,34.91,-89.01],["u",497781,31,4,74354,40.89,-143.76],["m",497781,11,2,27200,10.2,-50.23],["s",497782,11,6,26588,14.62,-9.67],["algo2",497783,7,4,17228,9.48,8.34],["algo2",497786,46,2,114925,63.21,-377.94],["algo2",497787,86,77,209712,115.34,393.72],["u",497775,22,4,54147,29.78,-81.59],["s",497775,17,5,41872,23.03,-36.69],["u",497776,29,12,71018,39.06,-28.72],["s",497777,23,3,56761,31.22,-96.31],["s",497778,23,10,56073,30.84,-5.41],["ai",497778,13,7,31949,17.57,19.85],["u",497778,29,14,70640,38.85,18.26],["n",497778,7,2,17424,9.58,-10.68],["u",497779,35,16,85080,46.79,-12.48],["u",497782,11,5,25398,13.97,-15.3],["m",497776,11,4,26978,8.4,1.15],["n",497777,7,0,17457,9.6,-47.4],["m",497778,15,7,37147,11.34,9.51],["algo",497781,2,2,5217,2.87,12.78],["s",497773,10,2,25023,13.76,-42.61],["n",497774,6,2,14685,8.08,-11.63],["ai",497774,17,6,42096,23.15,-33.59],["algo",497775,16,13,39833,21.91,55.7],["algo",497776,3,0,7656,4.21,-27.18],["m",497780,21,2,51928,18.6,-116.01],["algo",497777,2,0,4708,2.59,-9.64],["algo2",497779,5,1,12331,6.78,-28.78],["m",497782,8,4,19406,7.28,-5.46],["n",497776,4,4,9774,5.38,32.64],["s",497779,25,14,61249,33.69,29.16],["algo2",497781,5,4,12464,6.85,16.58],["n",497782,1,0,2424,1.33,-6.18],["algo",497780,5,4,12616,6.94,20.33],["n",497781,8,1,19581,10.77,-46.82],["n",497773,1,0,2500,1.38,-7.63],["ai",497773,6,0,15170,8.34,-45.06],["n",497775,3,0,7599,4.18,-24.48],["algo2",497778,2,1,4911,2.7,-7.99],["algo2",497784,2,2,5014,2.76,12.28],["algo2",497782,7,5,17077,9.39,10.83],["n",497772,2,0,5000,2.75,-16.5],["algo2",497785,2,1,4652,2.56,-2.73],["algo",497785,4,3,9891,5.44,9.19],["algo",497786,2,0,5378,2.96,-19.09],["m",497773,6,1,15000,5.19,-23.94],["m",497777,15,4,36714,12.46,-35.92],["n",497779,7,2,17434,9.59,-22.85],["algo2",497780,3,1,7411,4.08,-7.17],["algo2",497777,1,0,2500,1.38,-8.88],["algo",497782,1,1,2656,1.46,6.51],["algo",497787,4,2,9956,5.48,-4.41],["algo",497788,12,5,30304,16.67,-34.35],["algo2",497788,33,8,81548,44.85,-177.57],["algo2",497789,37,30,91279,50.2,138.81],["algo2",497790,9,5,22044,12.12,6.87],["algo2",497791,11,6,27534,15.14,-13.21],["algo",497791,3,1,7702,4.24,-11.78],["algo2",497792,20,8,48883,26.89,-41.3],["algo",497792,1,1,2271,1.25,5.56],["algo",497794,1,0,2470,1.36,-2.19],["u",497794,3,0,6769,3.72,-23.08],["s",497795,25,8,59104,32.51,-46.11],["u",497795,35,11,81155,44.64,-68.29],["ai",497795,17,4,41152,22.63,-55.97],["m",497795,16,3,38973,13.38,-62.15],["algo",497795,2,0,5253,2.89,-18.65],["s",497796,37,7,89040,48.97,-141.93],["algo2",497795,8,1,18328,10.08,-51.43],["m",497796,27,6,65071,22.26,-98.13],["algo2",497796,16,15,39966,21.98,77.52],["u",497796,48,8,113147,62.23,-213.56],["ai",497796,25,4,60284,33.16,-119.26],["algo",497796,16,13,39371,21.65,49.42],["m",497797,18,6,43414,13.79,-25.81],["algo2",497793,12,8,29193,16.06,11.74],["algo2",497794,5,4,11700,6.43,13.28],["n",497796,11,0,26100,14.35,-78.43],["algo2",497797,7,7,17203,9.46,42.15],["algo",497790,2,1,5004,2.75,-3.3],["n",497794,1,0,2338,1.29,-7.13],["s",497794,3,0,6746,3.71,-22.96],["m",497794,1,0,2664,1,-8.99],["algo",497797,6,3,14479,7.96,-7.58],["algo",497793,1,1,2657,1.46,6.51],["ai",497794,1,0,2352,1.29,-8.35],["ai",497797,19,6,45857,25.22,-47.77],["s",497797,25,8,59781,32.88,-71.72],["u",497797,33,9,76517,42.08,-93.68],["n",497797,7,1,17390,9.56,-38.07]]};
+var DESKS=[['algo3','Algo v3','shorts bounces when 90%+ of coins fall','#e0a43c'],['rev','Neutral Reversal','long 8 weakest, short 8 strongest','#b08cf0'],['algo2','Algo v2','short after a 1.5% bounce','#3fb8c9'],['algo','Algo','range mean reversion','#7fb069'],['n','Normal AI','strictest gate','#6db4ff'],['ai','Aggressive AI','Claude picks the trades','#f08a6c'],['m','Maker AI','limit orders','#c7a0a0'],['s','Super AI','looser gate','#9aa7b8'],['u','Ultra AI','loosest gate','#d36fa5']];
+var PAUSED={m:1,s:1,u:1},NEW={algo3:1,rev:1},off={};
+function money(x){return (x<0?'-$':'+$')+Math.round(Math.abs(x)).toLocaleString()}function cls(x){return x<0?'r':x>0?'g':''}
+function fromRows(rows){var m={};rows.forEach(function(p){var k=p.coin.indexOf(':')<0?'ai':p.coin.split(':')[1],h=Math.floor(new Date(p.closed_at).getTime()/3600000),x=m[k+'|'+h]=m[k+'|'+h]||[k,h,0,0,0,0,0];x[2]++;if(+p.pnl>0)x[3]++;x[4]+=p.notional*2;x[5]+=+p.fees;x[6]+=+p.pnl});return Object.keys(m).map(function(k){return m[k]})}
+function render(S,live){
+ var b=document.getElementById('badge');b.className='badge'+(live?' live':'');document.getElementById('src').textContent=live?'Live, updates every minute':'Snapshot '+new Date(S.at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+ var T={n:0,w:0,v:0,f:0,net:0},D={};
+ S.b.forEach(function(r){var d=D[r[0]]=D[r[0]]||{n:0,w:0,v:0,f:0,net:0,h:{}};d.n+=r[2];d.w+=r[3];d.v+=r[4];d.f+=r[5];d.net+=r[6];d.h[r[1]]=(d.h[r[1]]||0)+r[6];T.n+=r[2];T.w+=r[3];T.v+=r[4];T.f+=r[5];T.net+=r[6]});
+ var open=0;for(var k in S.open)open+=S.open[k];
+ document.getElementById('fig').innerHTML=[['Net P/L','<span class="'+cls(T.net)+'">'+money(T.net)+'</span>'],['Fees paid','$'+Math.round(T.f).toLocaleString()],['Volume','$'+(T.v/1e6).toFixed(2)+'M'],['Closed trades',T.n.toLocaleString()],['Open now',open]].map(function(a){return '<div><span>'+a[0]+'</span><b>'+a[1]+'</b></div>'}).join('');
+ var hs=S.b.map(function(r){return r[1]}),h0=Math.min.apply(null,hs),h1=Math.max.apply(null,hs),N=h1-h0+1,series=[];
+ DESKS.forEach(function(ds){var d=D[ds[0]];if(!d)return;var c=0,a=[];for(var h=h0;h<=h1;h++){c+=d.h[h]||0;a.push(c)}series.push({k:ds[0],n:ds[1],c:ds[3],a:a})});
+ var tot=[],c2=0;for(var h=h0;h<=h1;h++){var s=0;for(var k2 in D)s+=D[k2].h[h]||0;c2+=s;tot.push(c2)}
+ var vis=series.filter(function(s){return !off[s.k]}),all=[].concat.apply([],vis.map(function(s){return s.a})).concat(tot).concat([0]),lo=Math.min.apply(null,all),hi=Math.max.apply(null,all),pad=(hi-lo)*.06||10;lo-=pad;hi+=pad;
+ var W=900,H=340,L=56,R=16,Tp=12,Bt=28,X=function(i){return L+(W-L-R)*i/Math.max(1,N-1)},Y=function(v){return Tp+(H-Tp-Bt)*(1-(v-lo)/(hi-lo))};
+ var step=Math.pow(10,Math.floor(Math.log10((hi-lo)/4)));step*=[1,2,5,10].filter(function(m){return (hi-lo)/(step*m)<=6})[0]||10;var g='';
+ for(var v=Math.ceil(lo/step)*step;v<=hi;v+=step)g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--line)"/><text x="'+(L-8)+'" y="'+(Y(v)+4)+'" text-anchor="end">'+(v<0?'-':'')+'$'+Math.abs(Math.round(v)).toLocaleString()+'</text>';
+ g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(0)+'" y2="'+Y(0)+'" stroke="var(--mut)" stroke-dasharray="3 4"/>';
+ for(var t=0;t<N;t+=Math.max(1,Math.ceil(N/6))){var dt=new Date((h0+t)*3600000);g+='<text x="'+X(t)+'" y="'+(H-8)+'" text-anchor="middle">'+dt.toLocaleString([], {day:'numeric',hour:'2-digit'})+'h</text>'}
+ function path(a){return a.map(function(v,i){return (i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)}).join(' ')}
+ vis.forEach(function(s){g+='<path d="'+path(s.a)+'" fill="none" stroke="'+s.c+'" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" opacity=".9"/>'});
+ g+='<path d="'+path(tot)+'" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><circle cx="'+X(N-1)+'" cy="'+Y(tot[N-1])+'" r="4.5" fill="var(--ink)" stroke="var(--panel)" stroke-width="2"/>';
+ document.getElementById('chart').innerHTML=g;
+ document.getElementById('leg').innerHTML='<span class="badge"><i style="background:var(--ink)"></i>All desks</span>'+series.map(function(s){return '<button type="button" data-k="'+s.k+'" aria-pressed="'+(!off[s.k])+'"><i style="background:'+s.c+'"></i>'+s.n+'</button>'}).join('');
+ Array.prototype.forEach.call(document.querySelectorAll('#leg button'),function(bn){bn.onclick=function(){off[bn.dataset.k]=!off[bn.dataset.k];render(S,live)}});
+ document.getElementById('rows').innerHTML=DESKS.map(function(ds){var d=D[ds[0]]||{n:0,w:0,v:0,f:0,net:0,h:{}},o=S.open[ds[0]]||0,tag=PAUSED[ds[0]]?'<span class="tag">PAUSED</span>':NEW[ds[0]]?'<span class="tag">NEW</span>':'',sp='';
+  var a=[],c=0;for(var h=h0;h<=h1;h++){c+=d.h[h]||0;a.push(c)}
+  if(d.n){var mn=Math.min.apply(null,a.concat([0])),mx=Math.max.apply(null,a.concat([0])),r=(mx-mn)||1;sp='<svg width="90" height="26" viewBox="0 0 90 26" aria-hidden="true"><path d="'+a.map(function(v,i){return (i?'L':'M')+(i*90/Math.max(1,a.length-1)).toFixed(1)+' '+(24-(v-mn)/r*22).toFixed(1)}).join(' ')+'" fill="none" stroke="'+ds[3]+'" stroke-width="1.6"/></svg>'}
+  return '<tr><td>'+ds[1]+tag+'<span class="d">'+ds[2]+'</span></td><td>'+d.n+'</td><td>'+(d.n?Math.round(d.w/d.n*100)+'%':'–')+'</td><td>$'+Math.round(d.v/1000)+'K</td><td>$'+Math.round(d.f)+'</td><td class="'+cls(d.net)+'">'+(d.n?money(d.net):'–')+'</td><td>'+o+'</td><td>'+sp+'</td></tr>'}).join('')}
+async function live(){var rows=[];for(var o=0;;o+=1000){var r=await (await fetch(B+'ap_positions?select=coin,notional,pnl,fees,closed_at&status=eq.closed&opened_at=gte.'+RS+'&offset='+o+'&limit=1000',{headers:{apikey:K,Authorization:'Bearer '+K}})).json();if(!Array.isArray(r))throw 0;rows=rows.concat(r);if(r.length<1000)break}
+ var op=await (await fetch(B+'ap_positions?select=coin&status=eq.open',{headers:{apikey:K,Authorization:'Bearer '+K}})).json(),oc={};op.forEach(function(p){var k=p.coin.indexOf(':')<0?'ai':p.coin.split(':')[1];oc[k]=(oc[k]||0)+1});
+ return {at:Date.now(),b:fromRows(rows),open:oc}}
+var cur=SNAP,isLive=false;render(cur,false);
+function tick(){live().then(function(S){cur=S;isLive=true;render(S,true)}).catch(function(){render(cur,isLive)})}
+tick();setInterval(tick,60000);
+</script>
+</body></html>
