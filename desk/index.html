@@ -77,7 +77,7 @@ var DESKS=[['algo3','Algo v3','shorts bounces when 90%+ of coins fall','#e0a43c'
 var PAUSED={m:1,s:1,u:1},NEW={algo3:1,rev:1,algoq:1,g:1},off={};
 function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function ago(t){var m=Math.round((Date.now()-new Date(t).getTime())/60000);return m<60?m+' min ago':m<1440?Math.round(m/60)+' h ago':Math.round(m/1440)+' d ago'}
-function news(S){var seen={},items=(S.news||[]).filter(function(n){if(seen[n.coin])return false;seen[n.coin]=1;return true}).slice(0,12);
+function news(S){var seen={},items=(S.news||[]).filter(function(n){if(n.coin==='CONTROL'||seen[n.coin])return false;seen[n.coin]=1;return true}).slice(0,12);
  if(!items.length){document.getElementById('news').innerHTML='<h2>News on the coins we trade</h2><p class="only">No scans yet.</p>';return}
  var bear=items.filter(function(n){return n.sentiment==='bearish'}).length,bull=items.filter(function(n){return n.sentiment==='bullish'}).length;
  document.getElementById('news').innerHTML='<h2>News on the coins we trade</h2><p class="only" style="margin-bottom:6px">Latest scan per coin: '+bear+' bearish, '+bull+' bullish, '+(items.length-bear-bull)+' neutral. The scanner reads one coin every 15 minutes.</p><div class="nw">'+items.map(function(n){var links=(n.sources||[]).filter(function(u){return /^https:\/\//.test(u)}).slice(0,3).map(function(u){var h=u.replace(/^https:\/\/(www\.)?/,'').split('/')[0];return '<a href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">'+esc(h)+'</a>'}).join('');
